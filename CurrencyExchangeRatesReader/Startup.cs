@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EasyCaching.Core.Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,6 +27,15 @@ namespace CurrencyExchangeRatesReader
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddEasyCaching(options =>
+            {
+                options.UseRedis(configuration =>
+                {
+                    configuration.DBConfig.Endpoints.Add(new ServerEndPoint("localhost", 6379));
+                    configuration.DBConfig.AllowAdmin = true;
+                },"redis1");
+            });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
