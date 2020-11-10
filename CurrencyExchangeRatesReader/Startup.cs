@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CurrencyExchangeRatesReader.Helpers;
+using CurrencyExchangeRatesReader.Services;
+using DataLibrary.Models;
 using EasyCaching.Core.Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -35,7 +38,8 @@ namespace CurrencyExchangeRatesReader
                     configuration.DBConfig.AllowAdmin = true;
                 },"redis1");
             });
-
+            services.AddScoped<ICachingHelper, CachingHelper>();
+            services.AddScoped<ICurrencyModel, Currency>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
