@@ -1,26 +1,36 @@
-﻿using DataLibrary.Services;
+﻿using DataLibrary.Models;
+using DataLibrary.Services;
+using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace DataLibrary
 {
-    public class CurrencyRepository : IRepository
+    public class CurrencyRepository : ICurrencyRepository
     {
         //private IConnectionProvider _connProvider;
+        private IDistributedCache _distributedCache;
+        private ICachingHelper _cachingHelper;
 
-        public List<T> GetCurrenciesER<T>(Dictionary<string, T> keyValuePairs)
+        public CurrencyRepository(IDistributedCache distributedCache, ICachingHelper cachingHelper)
         {
-            throw new NotImplementedException();
+            _distributedCache = distributedCache;
+            _cachingHelper = cachingHelper;
+
         }
 
-        public T GetSingleCurrencyER<T>(Expression<Func<string, string>> expression)
+        public async Task<IList<ICurrencyModel>> GetData( ICurrencyModel model)
         {
-            throw new NotImplementedException();
+            IList<ICurrencyModel> cachedData;
+
+            //Gets from server and caches
+            await _cachingHelper.SaveDataToCache(model);
+            cachedData = await _cachingHelper.LoadDataFromCache(model);
+            return cachedData;
         }
 
-        public int SaveRates<T>()
+        public int SaveData<T>()
         {
             throw new NotImplementedException();
         }

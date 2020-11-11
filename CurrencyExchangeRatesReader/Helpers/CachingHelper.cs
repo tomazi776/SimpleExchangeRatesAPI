@@ -1,82 +1,84 @@
-﻿using CurrencyExchangeRatesReader.JsonModels;
-using CurrencyExchangeRatesReader.Services;
+﻿using CurrencyExchangeRatesReader.Services;
+using DataLibrary.Extensions;
 using DataLibrary.Models;
-using EasyCaching.Core;
-using EasyCaching.Core.Interceptor;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+using DataLibrary.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net;
+using System.Diagnostics;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace CurrencyExchangeRatesReader.Helpers
 {
     public class CachingHelper : ICachingHelper
     {
-        private readonly IEasyCachingProviderFactory _cachingProviderFactory;
-        private readonly IEasyCachingProvider _easyCachingProvider;
+        private readonly IDistributedCache _distributedCache;
+        private readonly IResponseDataProcessor _responseDataProcessor;
 
-        public CachingHelper(IEasyCachingProviderFactory easyCachingProviderFactory)
+
+        //public bool IsInCache { get; set; }
+
+        public List<string> KeysToLookup { get; private set; } = new List<string>();
+
+        public CachingHelper(IDistributedCache distributedCache, IResponseDataProcessor responseDataProcessor)
         {
-            _cachingProviderFactory = easyCachingProviderFactory;
-            _easyCachingProvider = _cachingProviderFactory.GetCachingProvider("redis1");
+            _distributedCache = distributedCache;
+            _responseDataProcessor = responseDataProcessor;
         }
 
-        public async Task<List<ICurrencyModel>> MapRequestData(ICurrencyModel dataModel)
+        //public bool CheckIfInCache()
+        //{
+        //    return IsInCache = LookupKeys.Any();
+        //}
+
+        public async Task SaveDataToCache(ICurrencyModel model)
         {
-            List<ICurrencyModel> currencyrates = new List<ICurrencyModel>();
+            //Gets data from ECB
+            string jSon = await SendRequest();
+            var processedData = _responseDataProcessor.Deserialize(model, jSon);
 
-            string jSon = string.Empty;
-            jSon = await SendRequest();
-
-            JObject parsedJson = JObject.Parse(jSon);
-
-            //Refactor to support wildcarding for multiple currencies
-            var currenciesNodes = parsedJson["dataSets"].First["series"].Children();
-
-            // different for dataonly
-            var currenciesInfoNodes = parsedJson["structure"]["dimensions"]["series"][1].Values().Children();
-            var dateRanges = parsedJson["structure"]["dimensions"]["observation"][0].Values().Children();
-
-            List<string> codes = new List<string>();
-            List<string> names = new List<string>();
-            List<DateTime> dates = new List<DateTime>();
-            AddCurrenciesInfo(codes, names, currenciesInfoNodes, dates, dateRanges);
-
-            int i = 0;
-            foreach (var curr in currenciesNodes)
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            foreach (var item in processedData)
             {
-                int j = 0;
-                var timeFrameCurrencyNodes = currenciesNodes.Children().ToList()[i].Children().Last().Children().ToList().Children();
-                foreach (var currencyNode in timeFrameCurrencyNodes)
-                {
-                    var eRPerTimeFrame = currencyNode.Children().First().Children().ToList()[0].Value<decimal>();
-                    dataModel = new DataLibrary.Models.Currency()
-                    {
-                        Code = codes[i],
-                        Name = names[i],
-                        ExchangeRate = eRPerTimeFrame,
-                        ObservationDate = dates[j]
-                    };
+                var recordId = item.CreateId();
+                KeysToLookup.Add(recordId);
 
-                    // For testing
-                    Console.WriteLine(dataModel.Code + "(" + dataModel.Name + ")" +Environment.NewLine +
-                        dataModel.ExchangeRate.ToString() + Environment.NewLine + 
-                        dataModel.ObservationDate.ToString() + Environment.NewLine);
-
-                    currencyrates.Add(dataModel);
-                    j++;
-                }
-                i++;
+                //TODO: make optional expire times depend upon data calling frequency
+                await _distributedCache.SetRecordAsync(item, recordId);
             }
-            return currencyrates;
+            stopwatch.Stop();
+            System.Console.WriteLine("SAVING DATA --- TIME IN MILISECONDS: " + stopwatch.ElapsedMilliseconds);
+
+            //if (KeysToLookup.Count > 0)
+            //{
+            //    foreach (var item in processedData)
+            //    {
+            //        var id = item.CreateId();
+
+            //        //TODO: make optional expire times depend upon data calling frequency
+            //        await _distributedCache.SetRecordAsync(item, id);
+            //    }
+            //}
+        }
+
+        public async Task<IList<ICurrencyModel>> LoadDataFromCache(ICurrencyModel data)
+        {
+            IList<ICurrencyModel> records = new List<ICurrencyModel>();
+
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            foreach (var recordId in KeysToLookup)
+            {
+                // TODO: notify (maybe other thread) that single record not found to generate Request and go get it. 
+                // When finished loading, check again.
+                var record = await _distributedCache.GetRecordAsync<ICurrencyModel>(recordId);
+                records.Add(record);
+            }
+            stopWatch.Stop();
+            System.Console.WriteLine("LOADING DATA --- TIME IN MILISECONDS: " + stopWatch.ElapsedMilliseconds);
+            return records;
         }
 
         private async Task<string> SendRequest()
@@ -95,19 +97,6 @@ namespace CurrencyExchangeRatesReader.Helpers
             }
 
             return await response.Content.ReadAsStringAsync();
-        }
-
-        private void AddCurrenciesInfo(List<string> codes, List<string> names, IJEnumerable<JToken> infoNodes, List<DateTime> dates, IJEnumerable<JToken> dateRanges)
-        {
-            foreach (var infoNode in infoNodes)
-            {
-                codes.Add(infoNode["id"].Value<string>());
-                names.Add(infoNode["name"].Value<string>());
-            }
-            foreach (var date in dateRanges)
-            {
-                dates.Add(date["id"].Value<DateTime>());
-            }
         }
 
         private HttpRequestMessage CreateRequest(string url)

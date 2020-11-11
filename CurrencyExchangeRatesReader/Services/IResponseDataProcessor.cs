@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace CurrencyExchangeRatesReader.Services
 {
-    public interface ICachingHelper
+    public interface IResponseDataProcessor
     {
-        Task<List<ICurrencyModel>> MapRequestData(ICurrencyModel model);
+        void HandleErrorCodes();
+        List<ICurrencyModel> Deserialize(ICurrencyModel model, string json);
     }
 }

@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using CurrencyExchangeRatesReader.Converters;
 using CurrencyExchangeRatesReader.Helpers;
 using CurrencyExchangeRatesReader.Services;
+using DataLibrary;
 using DataLibrary.Models;
-using EasyCaching.Core.Configurations;
+using DataLibrary.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -29,16 +32,21 @@ namespace CurrencyExchangeRatesReader
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
-            services.AddEasyCaching(options =>
+            services.AddControllers().AddJsonOptions(config =>
             {
-                options.UseRedis(configuration =>
-                {
-                    configuration.DBConfig.Endpoints.Add(new ServerEndPoint("localhost", 6379));
-                    configuration.DBConfig.AllowAdmin = true;
-                },"redis1");
+                config.JsonSerializerOptions.Converters.Add(new FormatNumberAsStringConverter());
             });
-            services.AddScoped<ICachingHelper, CachingHelper>();
+
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = Configuration.GetConnectionString("Redis");
+                //Ensure key's uniqueness per app domain
+                options.InstanceName = "ERApi_";
+            });
+
+            services.AddSingleton<ICurrencyRepository, CurrencyRepository>();
+            services.AddSingleton<IResponseDataProcessor, ResponseDataProcessor>();
+            services.AddSingleton<ICachingHelper, CachingHelper>();
             services.AddScoped<ICurrencyModel, Currency>();
         }
 
