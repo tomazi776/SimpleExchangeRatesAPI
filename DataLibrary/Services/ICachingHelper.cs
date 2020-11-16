@@ -8,8 +8,8 @@ namespace DataLibrary.Services
 {
     public interface ICachingHelper
     {
-        //Task<List<ICurrencyModel>> MapRequestData(ICurrencyModel model);
-        Task SaveDataToCache(ICurrencyModel data);
-        Task<IList<ICurrencyModel>> LoadDataFromCache(ICurrencyModel data);
+        public List<string> KeysToLookup { get; set; }
+        Task SaveDataToCache(List<ICurrencyModel> data);
+        Task<List<string>> LoadDataFromCache(ICurrencyModel data);
     }
 }

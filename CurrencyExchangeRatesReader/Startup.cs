@@ -32,19 +32,23 @@ namespace CurrencyExchangeRatesReader
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddJsonOptions(config =>
-            {
-                config.JsonSerializerOptions.Converters.Add(new FormatNumberAsStringConverter());
-            });
+            //services.AddControllers().AddJsonOptions(config =>
+            //{
+            //    config.JsonSerializerOptions.Converters.Add(new FormatNumberAsStringConverter());
+            //});
+            services.AddControllers();
+
 
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = Configuration.GetConnectionString("Redis");
                 //Ensure key's uniqueness per app domain
-                options.InstanceName = "ERApi_";
+                //options.InstanceName = "ERApi_";
             });
 
+            //TODO: Ensure proper scoping
             services.AddSingleton<ICurrencyRepository, CurrencyRepository>();
+            services.AddSingleton<IRequestManager, RequestManager>();
             services.AddSingleton<IResponseDataProcessor, ResponseDataProcessor>();
             services.AddSingleton<ICachingHelper, CachingHelper>();
             services.AddScoped<ICurrencyModel, Currency>();

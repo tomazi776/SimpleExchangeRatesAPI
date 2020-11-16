@@ -11,9 +11,6 @@ namespace DataLibrary.Models
     {
         public string Code { get; set; }
         public string Name { get; set; }
-
-        [JsonConverter(typeof(FormatNumberAsStringConverter))]
-        [JsonPropertyName("birth_date")]
         public decimal ExchangeRate { get; set; }
         public DateTime ObservationDate { get; set; }
     }

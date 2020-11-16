@@ -1,4 +1,5 @@
-﻿using DataLibrary.Models;
+﻿using CurrencyExchangeRatesReader.Converters;
+using DataLibrary.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Collections.Generic;
@@ -22,17 +23,14 @@ namespace DataLibrary.Extensions
             await cache.SetStringAsync(recordId, jsonData, options);
         }
 
-        public static async Task<Currency> GetRecordAsync<T>(this IDistributedCache cache, string recordId)
+        public static async Task<string> GetRecordAsync<T>(this IDistributedCache cache, string recordId)
         {
             var jsonData = await cache.GetStringAsync(recordId);
             if (jsonData is null)
             {
-                return null;
+                return default;
             }
-
-            // TODO: don't deserialize as it's an REST API
-            var deserialized = JsonSerializer.Deserialize<Currency>(jsonData);
-            return deserialized;
+            return jsonData;
         }
     }
 }

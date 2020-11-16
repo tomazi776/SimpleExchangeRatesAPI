@@ -1,4 +1,5 @@
 ﻿using DataLibrary.Models;
+using DataLibrary.Services;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -56,11 +57,6 @@ namespace CurrencyExchangeRatesReader.Services
                 return currencyrates;
         }
 
-        public void HandleErrorCodes()
-        {
-            throw new NotImplementedException();
-        }
-
         private void AddCurrenciesInfo(List<string> codes, List<string> names, IJEnumerable<JToken> infoNodes, List<DateTime> dates, IJEnumerable<JToken> dateRanges)
         {
             foreach (var infoNode in infoNodes)
@@ -73,11 +69,5 @@ namespace CurrencyExchangeRatesReader.Services
                 dates.Add(date["id"].Value<DateTime>());
             }
         }
-
-       
-
-
-
-
     }
 }

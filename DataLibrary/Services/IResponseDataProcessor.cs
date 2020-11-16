@@ -1,14 +1,12 @@
 ﻿using DataLibrary.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 
-namespace CurrencyExchangeRatesReader.Services
+namespace DataLibrary.Services
 {
     public interface IResponseDataProcessor
     {
-        void HandleErrorCodes();
         List<ICurrencyModel> Deserialize(ICurrencyModel model, string json);
     }
 }

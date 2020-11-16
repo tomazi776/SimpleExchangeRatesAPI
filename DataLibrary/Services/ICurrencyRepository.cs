@@ -10,7 +10,7 @@ namespace DataLibrary.Services
     {
         //T GetSingleCurrencyER<T>(Expression<Func<string, string>> expression);
         //List<T> GetCurrenciesER<T>(Dictionary<string, T> keyValuePairs) where T : ICurrencyModel;
-        Task<IList<ICurrencyModel>> GetData(ICurrencyModel model);
+        Task<IList<string>> GetData(ICurrencyModel model, string requestUrl);
         int SaveData<T>();
 
     }
