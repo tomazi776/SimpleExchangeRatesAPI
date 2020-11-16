@@ -1,8 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using EasyCaching.Core.Configurations;
+using CurrencyExchangeRatesReader.Converters;
+using CurrencyExchangeRatesReader.Helpers;
+using CurrencyExchangeRatesReader.Services;
+using DataLibrary;
+using DataLibrary.Models;
+using DataLibrary.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,16 +32,26 @@ namespace CurrencyExchangeRatesReader
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //services.AddControllers().AddJsonOptions(config =>
+            //{
+            //    config.JsonSerializerOptions.Converters.Add(new FormatNumberAsStringConverter());
+            //});
             services.AddControllers();
-            services.AddEasyCaching(options =>
+
+
+            services.AddStackExchangeRedisCache(options =>
             {
-                options.UseRedis(configuration =>
-                {
-                    configuration.DBConfig.Endpoints.Add(new ServerEndPoint("localhost", 6379));
-                    configuration.DBConfig.AllowAdmin = true;
-                },"redis1");
+                options.Configuration = Configuration.GetConnectionString("Redis");
+                //Ensure key's uniqueness per app domain
+                //options.InstanceName = "ERApi_";
             });
 
+            //TODO: Ensure proper scoping
+            services.AddSingleton<ICurrencyRepository, CurrencyRepository>();
+            services.AddSingleton<IRequestManager, RequestManager>();
+            services.AddSingleton<IResponseDataProcessor, ResponseDataProcessor>();
+            services.AddSingleton<ICachingHelper, CachingHelper>();
+            services.AddScoped<ICurrencyModel, Currency>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
