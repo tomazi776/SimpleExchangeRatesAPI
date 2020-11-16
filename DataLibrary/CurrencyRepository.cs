@@ -56,7 +56,6 @@ namespace DataLibrary
                 await _cachingHelper.SaveDataToCache(processedData);
                 cachedData = await _cachingHelper.LoadDataFromCache(model);
             }
-
             return cachedData;
         }
 

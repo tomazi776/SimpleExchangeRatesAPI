@@ -1,12 +1,7 @@
-﻿using CurrencyExchangeRatesReader.Converters;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System;
 
 namespace DataLibrary.Models
 {
-    [Serializable]
     public class Currency : ICurrencyModel
     {
         public string Code { get; set; }
