@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using CurrencyExchangeRatesReader.Converters;
 using CurrencyExchangeRatesReader.Helpers;
 using CurrencyExchangeRatesReader.Services;
 using DataLibrary;
@@ -11,12 +5,9 @@ using DataLibrary.Models;
 using DataLibrary.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace CurrencyExchangeRatesReader
 {
@@ -32,13 +23,7 @@ namespace CurrencyExchangeRatesReader
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddControllers().AddJsonOptions(config =>
-            //{
-            //    config.JsonSerializerOptions.Converters.Add(new FormatNumberAsStringConverter());
-            //});
             services.AddControllers();
-
-
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = Configuration.GetConnectionString("Redis");

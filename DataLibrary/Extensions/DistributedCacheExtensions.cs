@@ -1,10 +1,5 @@
-﻿using CurrencyExchangeRatesReader.Converters;
-using DataLibrary.Models;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 

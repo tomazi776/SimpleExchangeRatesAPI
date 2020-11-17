@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using DataLibrary.Models;
+﻿using DataLibrary.Models;
 using DataLibrary.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace CurrencyExchangeRatesReader.Controllers

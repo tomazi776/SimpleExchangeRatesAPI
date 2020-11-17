@@ -1,12 +1,9 @@
-﻿using CurrencyExchangeRatesReader.Services;
-using DataLibrary.Extensions;
+﻿using DataLibrary.Extensions;
 using DataLibrary.Models;
 using DataLibrary.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace CurrencyExchangeRatesReader.Helpers
