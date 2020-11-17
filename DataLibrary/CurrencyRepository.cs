@@ -11,44 +11,37 @@ namespace DataLibrary
 {
     public class CurrencyRepository : ICurrencyRepository
     {
-        //private IConnectionProvider _connProvider;
-        private readonly IDistributedCache _distributedCache;
         private readonly ICachingHelper _cachingHelper;
         private readonly IResponseDataProcessor _responseDataProcessor;
         private readonly IRequestManager _requestManager;
 
-        public CurrencyRepository(IDistributedCache distributedCache, ICachingHelper cachingHelper,
+        public CurrencyRepository(ICachingHelper cachingHelper,
             IResponseDataProcessor responseDataProcessor, IRequestManager requestManager)
         {
-            _distributedCache = distributedCache;
             _cachingHelper = cachingHelper;
             _responseDataProcessor = responseDataProcessor;
             _requestManager = requestManager;
         }
 
-        public async Task<IList<string>> GetData(ICurrencyModel model, string requestUrl)
+        public async Task<IList<string>> GetData(ICurrencyModel model, string endpoint)
         {
             //IList<ICurrencyModel> cachedData;
             IList<string> cachedData;
 
-            _cachingHelper.KeysToLookup.Add("PLN2020_11_05");
-            _cachingHelper.KeysToLookup.Add("PLN2020_11_06");
+            // TODO IMPORTANT!!!:  Move to another place before calling GetData() 
+            // [Mapping keys should be done only once for same request even if request is sent over and over again]
+            AddLookupKeysFromEndpoint(endpoint);
 
             cachedData = await _cachingHelper.LoadDataFromCache(model);
-
             if (cachedData.Any(item => item is null))
             {
                 //TODO:
                 //Get only data for keys wich got null
                 //var dataToFetch = cachedData.GetDifferenceBetweenCachedAndToLookup();
 
-                //Gets data for specified keys from ECB
-                //string jSon = await _cachingHelper.SendRequest(dataToFetch);
-
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
-                //TODO: move responsibility from _cachingHelper to RequestHandler
-                string jSon = await _requestManager.SendRequest();
+                string jSon = await _requestManager.SendGetRequest(endpoint);
                 var processedData = _responseDataProcessor.Deserialize(model, jSon);
                 sw.Stop();
                 Console.WriteLine("TIME IT TOOK TO FETCH DATA FROM ECB (Miliseconds): " + sw.ElapsedMilliseconds); ;
@@ -56,8 +49,16 @@ namespace DataLibrary
                 await _cachingHelper.SaveDataToCache(processedData);
                 cachedData = await _cachingHelper.LoadDataFromCache(model);
             }
-
             return cachedData;
+        }
+
+        private void AddLookupKeysFromEndpoint(string endpoint)
+        {
+            var lookupKeys = _requestManager.MapEndpointToLookupKeys(endpoint);
+            foreach (var key in lookupKeys)
+            {
+                _cachingHelper.KeysToLookup.Add(key);
+            }
         }
 
         public int SaveData<T>()
