@@ -7,7 +7,9 @@ namespace DataLibrary.Services
 {
     public interface IRequestManager
     {
-        void HandleErrorCodes();
-        Task<string> SendRequest();
+        List<string> MapEndpointToLookupKeys(string endpoint);
+        //void HandleErrorCodes();
+        Task<string> SendGetRequest(string requestUrl);
+        public string Endpoint { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace CurrencyExchangeRatesReader.Controllers
         private readonly ILogger<CurrencyRatesController> _logger;
         private readonly ICurrencyModel _currencyModel;
         private readonly ICurrencyRepository _currencyRepository;
-        private const string PLN_EUR_FromFourthNovQuery = "D.PLN+USD.EUR.SP00.A?startPeriod=2020-11-05&detail=dataonly";
+        private const string PLN_EUR_FromFourthNovQuery = "D.PLN+USD.EUR.SP00.A?startPeriod=2020-11-10&detail=dataonly";
 
         public CurrencyRatesController(ICurrencyModel model, ILogger<CurrencyRatesController> logger, ICurrencyRepository currencyRepository)
         {
@@ -30,7 +30,18 @@ namespace CurrencyExchangeRatesReader.Controllers
         [HttpGet("Get/PLN_EUR_FromFourthNov")]
         public void GetExchangeRatesForPLN()
         {
+            //AddLookupKeysFromEndpoint(endpoint);
             var currencyData = _currencyRepository.GetData(_currencyModel, PLN_EUR_FromFourthNovQuery);
         }
+
+
+        //private void AddLookupKeysFromEndpoint(string endpoint)
+        //{
+        //    var lookupKeys = _requestManager.MapEndpointToLookupKeys(endpoint);
+        //    foreach (var key in lookupKeys)
+        //    {
+        //        _cachingHelper.KeysToLookup.Add(key);
+        //    }
+        //}
     }
 }
