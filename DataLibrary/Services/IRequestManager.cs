@@ -8,7 +8,6 @@ namespace DataLibrary.Services
     public interface IRequestManager
     {
         List<string> MapEndpointToLookupKeys(string endpoint);
-        //void HandleErrorCodes();
         Task<string> SendGetRequest(string requestUrl);
         public string Endpoint { get; set; }
     }

@@ -31,6 +31,16 @@ namespace CurrencyExchangeRatesReader
                 //options.InstanceName = "ERApi_";
             });
 
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo()
+                {
+                    Title = "Currency Exchange API",
+                    Description = "An efficient API for displaying currency exchange rates from European Central Bank",
+                    Version = "V1"
+                });
+            });
+
             //TODO: Ensure proper scoping
             services.AddSingleton<ICurrencyRepository, CurrencyRepository>();
             services.AddSingleton<IRequestManager, RequestManager>();
@@ -56,6 +66,12 @@ namespace CurrencyExchangeRatesReader
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger Demo API");
             });
         }
     }

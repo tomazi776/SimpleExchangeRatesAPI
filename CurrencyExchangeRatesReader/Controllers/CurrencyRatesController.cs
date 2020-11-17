@@ -2,6 +2,8 @@
 using DataLibrary.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Text.Json;
 
 namespace CurrencyExchangeRatesReader.Controllers
 {
@@ -26,10 +28,18 @@ namespace CurrencyExchangeRatesReader.Controllers
         }
 
         [HttpGet("Get/PLN_EUR_FromFourthNov")]
-        public void GetExchangeRatesForPLN()
+        public IEnumerable<JsonDocument> GetExchangeRatesForPLN()
         {
             //AddLookupKeysFromEndpoint(endpoint);
-            var currencyData = _currencyRepository.GetData(_currencyModel, PLN_EUR_FromFourthNovQuery);
+            List<JsonDocument> jsonObjects = new List<JsonDocument>();
+            var currencyData = _currencyRepository.GetData(_currencyModel, PLN_EUR_FromFourthNovQuery).Result;
+
+            foreach (var item in currencyData)
+            {
+                var jsonData = JsonDocument.Parse(item);
+                jsonObjects.Add(jsonData);
+            }
+            return jsonObjects;
         }
 
 
