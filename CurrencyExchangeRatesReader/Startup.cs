@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.IO;
+using System.Reflection;
 
 namespace CurrencyExchangeRatesReader
 {
@@ -39,6 +42,10 @@ namespace CurrencyExchangeRatesReader
                     Description = "An efficient API for displaying currency exchange rates from European Central Bank",
                     Version = "V1"
                 });
+
+                var fileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var filePath = Path.Combine(AppContext.BaseDirectory, fileName);
+                options.IncludeXmlComments(filePath);
             });
 
             //TODO: Ensure proper scoping
@@ -46,6 +53,7 @@ namespace CurrencyExchangeRatesReader
             services.AddSingleton<IRequestManager, RequestManager>();
             services.AddSingleton<IResponseDataProcessor, ResponseDataProcessor>();
             services.AddSingleton<ICachingHelper, CachingHelper>();
+            services.AddScoped<IApiKeyManager, ApiKeyManager>();
             services.AddScoped<ICurrencyModel, Currency>();
         }
 
@@ -72,6 +80,7 @@ namespace CurrencyExchangeRatesReader
             app.UseSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger Demo API");
+                options.DisplayRequestDuration();
             });
         }
     }

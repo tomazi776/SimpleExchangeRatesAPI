@@ -1,0 +1,5 @@
+﻿CREATE TABLE [dbo].[ApiKey]
+(
+	[Id] INT NOT NULL IDENTITY (1,1) PRIMARY KEY, 
+    [ApiKeyValue] NVARCHAR(50) NOT NULL,
+)

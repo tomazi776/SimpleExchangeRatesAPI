@@ -5,7 +5,14 @@ VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CurrencyExchangeRatesReader", "CurrencyExchangeRatesReader\CurrencyExchangeRatesReader.csproj", "{DC0EA705-4EF2-4086-8442-FCEE88416A15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLibrary", "DataLibrary\DataLibrary.csproj", "{A7F29651-9585-407A-8813-68F50AD67E5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataLibrary", "DataLibrary\DataLibrary.csproj", "{A7F29651-9585-407A-8813-68F50AD67E5A}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "AuthDb", "AuthDb\AuthDb.sqlproj", "{A333A0B0-7B9D-4403-9555-552668B0CD95}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7F8A9D67-8064-4391-AF3C-0A5C5C369704}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +28,12 @@ Global
 		{A7F29651-9585-407A-8813-68F50AD67E5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7F29651-9585-407A-8813-68F50AD67E5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7F29651-9585-407A-8813-68F50AD67E5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A333A0B0-7B9D-4403-9555-552668B0CD95}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

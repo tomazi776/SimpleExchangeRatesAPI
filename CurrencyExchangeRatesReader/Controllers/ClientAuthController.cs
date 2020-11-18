@@ -1,18 +1,27 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DataLibrary.Services;
+using Microsoft.AspNetCore.Mvc;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace CurrencyExchangeRatesReader.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class ClientAuthController : ControllerBase
     {
-        // GET api/<ClientAuthController>/Key
-        [HttpGet("Key/")]
-        public string Get()
+        private readonly IApiKeyManager _apiKeyGenerator;
+        public ClientAuthController(IApiKeyManager apiKeyGenerator)
         {
-            return "NewAPIKey";
+            _apiKeyGenerator = apiKeyGenerator;
+        }
+        
+        /// <summary>
+        /// Generates a unique API Key used for client request authorization
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Get/Key")]
+        public string GetApiKey()
+        {
+            return _apiKeyGenerator.GenerateKey();
         }
     }
 }

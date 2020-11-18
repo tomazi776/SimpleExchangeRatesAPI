@@ -27,8 +27,14 @@ namespace CurrencyExchangeRatesReader.Controllers
             _currencyRepository = currencyRepository;
         }
 
-        [HttpGet("Get/PLN_USD_EUR_FromTenthNov")]
-        public IEnumerable<JsonDocument> GetExchangeRatesForPLN()
+
+        /// <summary>
+        /// Gets exchange rates for PLN and USD denominated in EUR starting from 10th of November
+        /// </summary>
+        /// <returns></returns>
+        [ApiKeyAuth]
+        [HttpGet("Get/PLN_USD_EUR")]
+        public IEnumerable<JsonDocument> GetExchangeRatesForPLNAndUSD([FromHeader]string apiKey)
         {
             //AddLookupKeysFromEndpoint(endpoint);
             List<JsonDocument> jsonObjects = new List<JsonDocument>();
