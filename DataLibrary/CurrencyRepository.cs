@@ -25,11 +25,7 @@ namespace DataLibrary
 
         public async Task<IList<string>> GetData(ICurrencyModel model, string endpoint)
         {
-            //IList<ICurrencyModel> cachedData;
             IList<string> cachedData;
-
-            // TODO IMPORTANT!!!:  Move to another place before calling GetData() 
-            // [Mapping keys should be done only once for same request even if request is sent over and over again]
             AddLookupKeysFromEndpoint(endpoint);
 
             cachedData = await _cachingHelper.LoadDataFromCache(model);
@@ -59,11 +55,6 @@ namespace DataLibrary
             {
                 _cachingHelper.KeysToLookup.Add(key);
             }
-        }
-
-        public int SaveData<T>()
-        {
-            throw new NotImplementedException();
         }
     }
 }

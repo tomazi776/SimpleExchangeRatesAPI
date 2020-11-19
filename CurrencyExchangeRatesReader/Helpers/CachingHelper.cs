@@ -11,7 +11,7 @@ namespace CurrencyExchangeRatesReader.Helpers
     public class CachingHelper : ICachingHelper
     {
         private readonly IDistributedCache _distributedCache;
-        public List<string> KeysToLookup { get; set; } = new List<string>();
+        public HashSet<string> KeysToLookup { get; set; } = new HashSet<string>();
 
         public CachingHelper(IDistributedCache distributedCache)
         {
@@ -39,8 +39,8 @@ namespace CurrencyExchangeRatesReader.Helpers
         public async Task<List<string>> LoadDataFromCache(ICurrencyModel data)
         {
             List<string> records = new List<string>();
-
             Stopwatch stopWatch = new Stopwatch();
+
             stopWatch.Start();
             foreach (var recordId in KeysToLookup)
             {

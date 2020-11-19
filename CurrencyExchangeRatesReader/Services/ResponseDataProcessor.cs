@@ -35,16 +35,16 @@ namespace CurrencyExchangeRatesReader.Services
                     foreach (var currencyNode in timeFrameCurrencyNodes)
                     {
                         var eRPerTimeFrame = currencyNode.Children().First().Children().ToList()[0].Value<decimal>();
-                         dataModel = new Currency()
-                        {
-                            Code = codes[i],
-                            Name = names[i],
-                            ExchangeRate = eRPerTimeFrame,
-                            ObservationDate = dates[j]
+                    dataModel = new Currency()
+                    {
+                        Code = codes[i],
+                        Name = names[i],
+                        ExchangeRate = eRPerTimeFrame,
+                        ObservationDate = dates[j].ToString("yyyy-MM-dd")
                         };
 
                         // For testing
-                        Console.WriteLine(dataModel.Code + "(" + dataModel.Name + ")" + Environment.NewLine +
+                        Console.WriteLine("DESERIALIZED DATA:" + dataModel.Code + "(" + dataModel.Name + ")" + Environment.NewLine +
                             dataModel.ExchangeRate.ToString() + Environment.NewLine +
                             dataModel.ObservationDate.ToString() + Environment.NewLine);
 

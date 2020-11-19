@@ -6,7 +6,7 @@ namespace DataLibrary.Services
 {
     public interface ICachingHelper
     {
-        public List<string> KeysToLookup { get; set; }
+        public HashSet<string> KeysToLookup { get; set; }
         Task SaveDataToCache(List<ICurrencyModel> data);
         Task<List<string>> LoadDataFromCache(ICurrencyModel data);
     }
