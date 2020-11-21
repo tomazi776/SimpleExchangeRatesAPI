@@ -1,5 +1,6 @@
 ﻿using DataLibrary.Models;
 using DataLibrary.Services;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,61 +12,89 @@ namespace CurrencyExchangeRatesReader.Services
     {
         public List<ICurrencyModel> Deserialize(ICurrencyModel dataModel, string json)
         {
-                List<ICurrencyModel> currencyrates = new List<ICurrencyModel>();
+            JObject parsedJson = JObject.Parse(json);
 
-                //Process data
-                JObject parsedJson = JObject.Parse(json);
+            //Refactor to support wildcarding for multiple currencies
+            var currenciesNodes = parsedJson["dataSets"].First["series"].Children();
 
-                //Refactor to support wildcarding for multiple currencies
-                var currenciesNodes = parsedJson["dataSets"].First["series"].Children();
+            // different for detail=full
+            var currenciesInfoNodes = parsedJson["structure"]["dimensions"]["series"][1].Values().Children();
+            var dateRanges = parsedJson["structure"]["dimensions"]["observation"][0].Values().Children();
 
-                // different for detail=full
-                var currenciesInfoNodes = parsedJson["structure"]["dimensions"]["series"][1].Values().Children();
-                var dateRanges = parsedJson["structure"]["dimensions"]["observation"][0].Values().Children();
+            List<string> codes = new List<string>();
+            List<string> names = new List<string>();
+            List<DateTime> dates = new List<DateTime>();
 
-                List<string> codes = new List<string>();
-                List<string> names = new List<string>();
-                List<DateTime> dates = new List<DateTime>();
-                AddCurrenciesInfo(codes, names, currenciesInfoNodes, dates, dateRanges);
+            AddCurrenciesCodesNames(codes, names, currenciesInfoNodes);
+            AddCurrenciesDates(dates, dateRanges);
 
-                for (int i = 0; i < currenciesNodes.Count(); i++)
-                {
-                    int j = 0;
-                    var timeFrameCurrencyNodes = currenciesNodes.Children().ToList()[i].Children().Last().Children().ToList().Children();
-                    foreach (var currencyNode in timeFrameCurrencyNodes)
-                    {
-                        var eRPerTimeFrame = currencyNode.Children().First().Children().ToList()[0].Value<decimal>();
-                    dataModel = new Currency()
-                    {
-                        Code = codes[i],
-                        Name = names[i],
-                        ExchangeRate = eRPerTimeFrame,
-                        ObservationDate = dates[j].ToString("yyyy-MM-dd")
-                        };
-
-                        // For testing
-                        Console.WriteLine("DESERIALIZED DATA:" + dataModel.Code + "(" + dataModel.Name + ")" + Environment.NewLine +
-                            dataModel.ExchangeRate.ToString() + Environment.NewLine +
-                            dataModel.ObservationDate.ToString() + Environment.NewLine);
-
-                        currencyrates.Add(dataModel);
-                        j++;
-                    }
-                }
-                return currencyrates;
+            var currencies = new List<ICurrencyModel>();
+            for (int i = 0; i < currenciesNodes.Count(); i++)
+            {
+                var timeFrameCurrencyNodes = currenciesNodes.Children().ToList()[i].Children().Last().Children().ToList().Children();
+                currencies = GetMappedDataForTimeFrames(codes, names, dates, i, timeFrameCurrencyNodes);
+            }
+            return currencies;
         }
 
-        private void AddCurrenciesInfo(List<string> codes, List<string> names, IJEnumerable<JToken> infoNodes, List<DateTime> dates, IJEnumerable<JToken> dateRanges)
+        private List<ICurrencyModel> GetMappedDataForTimeFrames(List<string> codes, List<string> names, List<DateTime> dates, int i, IJEnumerable<JToken> timeFrameCurrencyNodes)
+        {
+            List<ICurrencyModel> currencyrates = new List<ICurrencyModel>();
+            for (int j = 0; j < timeFrameCurrencyNodes.Count(); j++)
+            {
+                var currencyNode = timeFrameCurrencyNodes.ElementAt(j);
+                if (IsHoliday(currencyNode))
+                {
+                    j++;
+                    continue;
+                }
+                var exchangeRate = currencyNode.Children().First().Children().ToList()[0].Value<decimal>();
+                var dataModel = MapToDataModel(codes, names, dates, i, j, exchangeRate);
+
+                // Print for testing 
+                // TODO: Handle with Logger
+                PrintDeserializedData(dataModel);
+                currencyrates.Add(dataModel);
+            }
+            return currencyrates;
+        }
+
+        private static void PrintDeserializedData(ICurrencyModel dataModel)
+        {
+            Console.WriteLine("DESERIALIZED DATA:" + dataModel.Code + "(" + dataModel.Name + ")" + Environment.NewLine +
+                dataModel.ExchangeRate.ToString() + Environment.NewLine +
+                dataModel.ObservationDate.ToString() + Environment.NewLine);
+        }
+
+        private static ICurrencyModel MapToDataModel(List<string> codes, List<string> names, List<DateTime> dates, int i, int j, decimal eRPerTimeFrame)
+        {
+            return new Currency()
+            {
+                Code = codes[i],
+                Name = names[i],
+                ExchangeRate = eRPerTimeFrame,
+                ObservationDate = dates[j].ToString("yyyy_MM_dd")
+            };
+        }
+
+        private void AddCurrenciesCodesNames(List<string> codes, List<string> names, IJEnumerable<JToken> infoNodes )
         {
             foreach (var infoNode in infoNodes)
             {
                 codes.Add(infoNode["id"].Value<string>());
                 names.Add(infoNode["name"].Value<string>());
             }
+        }
+
+        private void AddCurrenciesDates(List<DateTime> dates, IJEnumerable<JToken> dateRanges)
+        {
             foreach (var date in dateRanges)
-            {
                 dates.Add(date["id"].Value<DateTime>());
-            }
+        }
+
+        private bool IsHoliday(JToken currencyNode)
+        {
+            return currencyNode.Children().First().ElementAt(1).Value<int>() == 1;
         }
     }
 }

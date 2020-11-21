@@ -106,7 +106,7 @@ namespace DataLibrary.Services
             }
 
             // support wildcard to get all currencies
-            // refactor to get only codes data from ECB
+            // TODO: refactor to get only codes data from ECB
             if (codes.First() == string.Empty)
             {
                 codes.RemoveAt(0);
@@ -146,51 +146,88 @@ namespace DataLibrary.Services
             return codes;
         }
 
-        private void MapTimePeriods(string[] queryData, List<DateTime> dates, string periodName)
+        private void MapTimePeriods(string[] queryData, List<DateTime> startEndDates, string periodName)
         {
-            DateTime dateTime;
+            DateTime outputDate;
+            DateTime startEndDate;
+
+            //path contains start or end date
             if (queryData.Any(item => item == periodName))
             {
-                var index = Array.FindIndex(queryData, item => item == periodName);
-                index++;
+                var periodIndex = Array.FindIndex(queryData, item => item == periodName);
+                periodIndex++;
 
-                var date = queryData[index];
-                var dateParts = date.Split('-');
-                //var dateFormatted = dateParts[0] + "_" + dateParts[1] + "_" + dateParts[2];
+                var startEndDateStr = queryData[periodIndex];
+                var dateParts = startEndDateStr.Split('-');
+                startEndDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
 
-                dateTime = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
-                dates.Add(dateTime);
-            }
-            else
-            {
-                //ECB beginning or last day for api data
+
                 if (periodName == "startPeriod")
                 {
-                    dateTime = new DateTime(1999, 1, 4);
+                    outputDate = startEndDate;
+                }
+                //Get or modify date for endDate
+                else
+                {
+                    outputDate = GetModify(startEndDate);
+                }
+
+                startEndDates.Add(outputDate);
+            }
+            //Path doesn't contain startDate or endDate
+            else
+            {
+                if (periodName == "startPeriod")
+                {
+                    //ECB beginning day for api data
+                    outputDate = new DateTime(1999, 1, 4);
+                }
+                // if path has endDate but doesn't have "single record" constraint - assign Today's date to endDate
+                else if (queryData.Any(item => item == "true"))
+                {
+                    outputDate = DateTime.Now;
                 }
                 else
                 {
-                    if (DataForCurrentDayAvailable())
-                    {
-                        dateTime = DateTime.Now;
-                    }
-                    else
-                    {
-                        var now = DateTime.Now.Day;
-                        now--;
-                        dateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, now);
-                    }
+                    var startPeriodIndex = Array.FindIndex(queryData, item => item == "startPeriod");
+                    startPeriodIndex++;
+
+                    //CreateDate from index refactor -> repeated ^
+                    var startEndDateStr = queryData[startPeriodIndex];
+                    var dateParts = startEndDateStr.Split('-');
+                    outputDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
                 }
-                dates.Add(dateTime);
+                startEndDates.Add(outputDate);
             }
         }
 
-        private bool DataForCurrentDayAvailable()
+        private DateTime GetModify(DateTime endDate)
         {
-            return DateTime.Now.Hour > 16;
+            DateTime output;
+            // TODO: create extensions for some DateTime operations
+
+            // check if endDate is today
+            if (endDate.Day == DateTime.Now.Day)
+            {
+                //check if ECB data available
+                if (DateTime.Now.Hour >= 16)
+                {
+                    output = endDate;
+                }
+                else
+                {
+                    var dayNum = DateTime.Now.Day;
+                    dayNum--;
+                    output = new DateTime(DateTime.Now.Year, DateTime.Now.Month, dayNum);
+                }
+            }
+            // endDate is not today
+            else
+            {
+                output = endDate;
+            }
+            return output;
         }
-
-
 
         private HttpRequestMessage CreateGetRequest(string endpoint)
         {

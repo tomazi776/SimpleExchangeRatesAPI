@@ -40,12 +40,17 @@ namespace DataLibrary
                 string jSon = await _requestManager.SendGetRequest(endpoint);
                 var processedData = _responseDataProcessor.Deserialize(model, jSon);
                 sw.Stop();
-                Console.WriteLine("TIME IT TOOK TO FETCH DATA FROM ECB (Miliseconds): " + sw.ElapsedMilliseconds); ;
+                Console.WriteLine("TIME IT TOOK TO FETCH DATA FROM ECB (Miliseconds): " + sw.ElapsedMilliseconds);
 
                 await _cachingHelper.SaveDataToCache(processedData);
                 cachedData = await _cachingHelper.LoadDataFromCache(model);
             }
             return cachedData;
+        }
+
+        private void GetDataWhileCaching()
+        {
+            // TODO: create base method for saving and override when getting for the first time to avoid excess loading from cache
         }
 
         private void AddLookupKeysFromEndpoint(string endpoint)

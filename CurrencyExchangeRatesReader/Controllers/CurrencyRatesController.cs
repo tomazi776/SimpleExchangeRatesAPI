@@ -52,7 +52,7 @@ namespace CurrencyExchangeRatesReader.Controllers
         /// <response code="400">If the item is null</response> 
         /// <response code="401">If the supplied APIKey in header is not valid</response> 
         /// <response code="404">If exchange rate not found for date in given date range or for invalid endpoint</response>
-        [ApiKeyAuth]
+        //[ApiKeyAuth]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
