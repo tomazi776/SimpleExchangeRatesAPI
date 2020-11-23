@@ -5,7 +5,7 @@ STEPS TO TEST THE PROJECT:
 
 Prerequisites:
 1) Install supplied Redis-x64-3.2.100.msi
-  1.1) (Optionally) instal RDM or other Redis db management GUI
+2) (Optionally) instal RDM or other Redis db management GUI
 3) Ensure to run Redis server
 4) Install Java JDK 8u271-windows-x64 and set JAVA OPTS Environment Variable to enable testing with Gatling tool
 5) Download Gatling 
