@@ -11,7 +11,7 @@ namespace DataLibrary.Extensions
             TimeSpan? absoluteExpireTime = null, TimeSpan? unusedExpireTime = null)
         {
             var options = new DistributedCacheEntryOptions();
-            options.AbsoluteExpirationRelativeToNow = absoluteExpireTime ?? TimeSpan.FromSeconds(60);
+            options.AbsoluteExpirationRelativeToNow = absoluteExpireTime ?? TimeSpan.FromSeconds(3600);
             options.SlidingExpiration = unusedExpireTime;
 
             var jsonData = JsonSerializer.Serialize(data);

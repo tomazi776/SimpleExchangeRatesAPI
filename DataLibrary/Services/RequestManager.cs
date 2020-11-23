@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataLibrary.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -10,7 +11,7 @@ namespace DataLibrary.Services
 {
     public class RequestManager : IRequestManager
     {
-        public string Endpoint { get; set; }
+        private const string BaseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
         public async Task<string> SendGetRequest(string endpoint)
         {
             HttpRequestMessage getRequest = CreateGetRequest(endpoint);
@@ -23,24 +24,17 @@ namespace DataLibrary.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                HandleErrorCodes(response.StatusCode);
                 return null;
             }
             return await response.Content.ReadAsStringAsync();
         }
 
-        private void HandleErrorCodes(HttpStatusCode httpStatusCode)
-        {
-            if (httpStatusCode == HttpStatusCode.Unauthorized)
-            {
-                //TODO: open page showing error
-            }
-        }
 
         public List<string> MapEndpointToLookupKeys(string endpoint)
         {
-            var queryData = endpoint.Split('.', '+', '?', '=', '&');
             List<string> lookupKeys;
+
+            var queryData = endpoint.Split('.', '+', '?', '=', '&');
             List<DateTime> startEndDates = new List<DateTime>();
             List<string> codes;
 
@@ -56,12 +50,88 @@ namespace DataLibrary.Services
 
         private List<string> CreateRange(List<DateTime> dates)
         {
-            List<DateTime> allDates = new List<DateTime>();
+            var datesRange = CreateRangeForWorkingDays(dates[0], dates[1]);
+            return FormatDatesToStrings(datesRange);
+        }
+
+        public string CreateEndpointForMissingTimeFrame(HashSet<string> keys)
+        {
+            string missingDataEndpoint = string.Empty;
+            var codes = GetCodesData(keys);
+
+            var delimitedCodes = ApplyDelimiters(codes);
+            var startDate = GetDatePart(keys.First());
+            var endDate = GetDatePart(keys.Last());
+
+            StringBuilder sb = new StringBuilder();
+            missingDataEndpoint = sb
+                     .Append(EndpointHelper.dailyFrequency)
+                     .Append(delimitedCodes)
+                     .Append(EndpointHelper.denominatedInEur)
+                     .Append(EndpointHelper.referenceRatesCode)
+                     .Append(EndpointHelper.variationMeasure)
+                     .Append(EndpointHelper.optionalParamChar)
+                     .Append("startPeriod=")
+                     .Append(startDate)
+                     .Append("&")
+                     .Append("endPeriod=")
+                     .Append(endDate).ToString();
+            return missingDataEndpoint;
+        }
+
+        private string ApplyDelimiters(HashSet<string> codes)
+        {
+            List<string> newCodes = new List<string>(codes);
+            var onlyCodes = string.Empty;
+            if (newCodes.Count > 1)
+            {
+                foreach (var code in codes)
+                {
+                    onlyCodes += code + "+";
+                }
+                int trailingIndex = onlyCodes.LastIndexOf('+');
+                onlyCodes.Remove(trailingIndex);
+            }
+            else
+            {
+                onlyCodes = newCodes[0];
+            }
+            return onlyCodes;
+        }
+
+        private HashSet<string> GetCodesData(HashSet<string> keys)
+        {
+            HashSet<string> codes = new HashSet<string>();
+            foreach (var key in keys)
+            {
+                var keyData = key.Split('_');
+                var codePart = keyData[0];
+                codes.Add(codePart);
+            }
+            return codes;
+        }
+
+        private string GetDatePart(string key)
+        {
+            var keyData = key.Split('_');
+            string date = keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
+            return date;
+        }
+
+        private static List<string> FormatDatesToStrings(List<DateTime> allDates)
+        {
             List<string> allDatesInStrings = new List<string>();
+            foreach (var date in allDates)
+            {
+                var dateInString = date.ToString("yyyy_MM_dd");
+                allDatesInStrings.Add(dateInString);
+            }
+            return allDatesInStrings;
+        }
 
-            var startDate = dates[0];
-            var endDate = dates[1];
-
+        private static List<DateTime> CreateRangeForWorkingDays(DateTime startDate, DateTime endDate)
+        {
+            List<DateTime> allDates = new List<DateTime>();
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
                 if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
@@ -69,12 +139,7 @@ namespace DataLibrary.Services
                     allDates.Add(date);
                 }
             }
-            foreach (var date in allDates)
-            {
-                var dateInString = date.ToString("yyyy_MM_dd");
-                allDatesInStrings.Add(dateInString);
-            }
-            return allDatesInStrings;
+            return allDates;
         }
 
         private List<string> CombineDatesWithCodes(List<string> dates, List<string> codes)
@@ -106,7 +171,7 @@ namespace DataLibrary.Services
             }
 
             // support wildcard to get all currencies
-            // refactor to get only codes data from ECB
+            // TODO: refactor to get only codes data from ECB
             if (codes.First() == string.Empty)
             {
                 codes.RemoveAt(0);
@@ -146,51 +211,88 @@ namespace DataLibrary.Services
             return codes;
         }
 
-        private void MapTimePeriods(string[] queryData, List<DateTime> dates, string periodName)
+        private void MapTimePeriods(string[] queryData, List<DateTime> startEndDates, string periodName)
         {
-            DateTime dateTime;
+            DateTime outputDate;
+            DateTime startEndDate;
+
+            //path contains start or end date
             if (queryData.Any(item => item == periodName))
             {
-                var index = Array.FindIndex(queryData, item => item == periodName);
-                index++;
+                var periodIndex = Array.FindIndex(queryData, item => item == periodName);
+                periodIndex++;
 
-                var date = queryData[index];
-                var dateParts = date.Split('-');
-                //var dateFormatted = dateParts[0] + "_" + dateParts[1] + "_" + dateParts[2];
+                var startEndDateStr = queryData[periodIndex];
+                var dateParts = startEndDateStr.Split('-');
+                startEndDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
 
-                dateTime = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
-                dates.Add(dateTime);
-            }
-            else
-            {
-                //ECB beginning or last day for api data
+
                 if (periodName == "startPeriod")
                 {
-                    dateTime = new DateTime(1999, 1, 4);
+                    outputDate = startEndDate;
+                }
+                //Get or modify date for endDate
+                else
+                {
+                    outputDate = GetModify(startEndDate);
+                }
+
+                startEndDates.Add(outputDate);
+            }
+            //Path doesn't contain startDate or endDate
+            else
+            {
+                if (periodName == "startPeriod")
+                {
+                    //ECB beginning day for api data
+                    outputDate = new DateTime(1999, 1, 4);
+                }
+                // if path has endDate but doesn't have "single record" constraint - assign Today's date to endDate
+                else if (queryData.Any(item => item == "true"))
+                {
+                    outputDate = DateTime.Now;
                 }
                 else
                 {
-                    if (DataForCurrentDayAvailable())
-                    {
-                        dateTime = DateTime.Now;
-                    }
-                    else
-                    {
-                        var now = DateTime.Now.Day;
-                        now--;
-                        dateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, now);
-                    }
+                    var startPeriodIndex = Array.FindIndex(queryData, item => item == "startPeriod");
+                    startPeriodIndex++;
+
+                    //CreateDate from index refactor -> repeated ^
+                    var startEndDateStr = queryData[startPeriodIndex];
+                    var dateParts = startEndDateStr.Split('-');
+                    outputDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
                 }
-                dates.Add(dateTime);
+                startEndDates.Add(outputDate);
             }
         }
 
-        private bool DataForCurrentDayAvailable()
+        private DateTime GetModify(DateTime endDate)
         {
-            return DateTime.Now.Hour > 16;
+            DateTime output;
+            // TODO: create extensions for some DateTime operations
+
+            // check if endDate is today
+            if (endDate.Day == DateTime.Now.Day)
+            {
+                //check if ECB data available
+                if (DateTime.Now.Hour >= 16)
+                {
+                    output = endDate;
+                }
+                else
+                {
+                    var dayNum = DateTime.Now.Day;
+                    dayNum--;
+                    output = new DateTime(DateTime.Now.Year, DateTime.Now.Month, dayNum);
+                }
+            }
+            // endDate is not today
+            else
+            {
+                output = endDate;
+            }
+            return output;
         }
-
-
 
         private HttpRequestMessage CreateGetRequest(string endpoint)
         {
@@ -200,6 +302,11 @@ namespace DataLibrary.Services
             requestMsg.Headers.Add("Accept", "application/json");
             requestMsg.Headers.Add("Accept-Encoding", "deflate");
             return requestMsg;
+        }
+
+        public void SetLastRequestEndpoint(string endpoint)
+        {
+            SingleLastRequest.Instance.Endpoint = endpoint;
         }
     }
 }

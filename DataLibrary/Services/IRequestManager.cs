@@ -9,6 +9,8 @@ namespace DataLibrary.Services
     {
         List<string> MapEndpointToLookupKeys(string endpoint);
         Task<string> SendGetRequest(string requestUrl);
-        public string Endpoint { get; set; }
+        void SetLastRequestEndpoint(string endpoint);
+        string CreateEndpointForMissingTimeFrame(HashSet<string> notFoundKeys);
+        
     }
 }

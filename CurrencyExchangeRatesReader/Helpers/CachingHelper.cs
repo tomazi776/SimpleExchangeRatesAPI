@@ -1,4 +1,5 @@
-﻿using DataLibrary.Extensions;
+﻿using DataLibrary;
+using DataLibrary.Extensions;
 using DataLibrary.Models;
 using DataLibrary.Services;
 using Microsoft.Extensions.Caching.Distributed;
@@ -11,7 +12,8 @@ namespace CurrencyExchangeRatesReader.Helpers
     public class CachingHelper : ICachingHelper
     {
         private readonly IDistributedCache _distributedCache;
-        public List<string> KeysToLookup { get; set; } = new List<string>();
+        public HashSet<string> KeysToLookup { get; set; } = new HashSet<string>();
+        public HashSet<string> NotFoundKeys { get; set; } = new HashSet<string>();
 
         public CachingHelper(IDistributedCache distributedCache)
         {
@@ -23,11 +25,9 @@ namespace CurrencyExchangeRatesReader.Helpers
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            KeysToLookup.Clear();
             foreach (var item in data)
             {
                 var recordId = item.CreateId();
-                KeysToLookup.Add(recordId);
 
                 //TODO: make optional expire times depend upon data calling frequency
                 await _distributedCache.SetRecordAsync(item, recordId);
@@ -39,17 +39,29 @@ namespace CurrencyExchangeRatesReader.Helpers
         public async Task<List<string>> LoadDataFromCache(ICurrencyModel data)
         {
             List<string> records = new List<string>();
-
             Stopwatch stopWatch = new Stopwatch();
+
             stopWatch.Start();
             foreach (var recordId in KeysToLookup)
             {
                 var record = await _distributedCache.GetRecordAsync<Currency>(recordId);
-                records.Add(record);
+                if (record is null && !IsHoliday(recordId))
+                {
+                    NotFoundKeys.Add(recordId);
+                }
+                if (!IsHoliday(recordId))
+                {
+                    records.Add(record);
+                }
             }
             stopWatch.Stop();
             System.Console.WriteLine("LOADING DATA --- TIME IN MILISECONDS: " + stopWatch.ElapsedMilliseconds);
             return records;
+        }
+
+        private bool IsHoliday(string recordId)
+        {
+            return SingleLastRequest.Instance.Holidays.Contains(recordId);
         }
     }
 }

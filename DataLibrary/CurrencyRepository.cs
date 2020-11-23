@@ -25,45 +25,48 @@ namespace DataLibrary
 
         public async Task<IList<string>> GetData(ICurrencyModel model, string endpoint)
         {
-            //IList<ICurrencyModel> cachedData;
             IList<string> cachedData;
+            _cachingHelper.NotFoundKeys.Clear();
 
-            // TODO IMPORTANT!!!:  Move to another place before calling GetData() 
-            // [Mapping keys should be done only once for same request even if request is sent over and over again]
             AddLookupKeysFromEndpoint(endpoint);
 
-            cachedData = await _cachingHelper.LoadDataFromCache(model);
-            if (cachedData.Any(item => item is null))
-            {
-                //TODO:
-                //Get only data for keys wich got null
-                //var dataToFetch = cachedData.GetDifferenceBetweenCachedAndToLookup();
+            //Set single last request endpoint to this request's endpoint
+            _requestManager.SetLastRequestEndpoint(endpoint);
 
+            cachedData = await _cachingHelper.LoadDataFromCache(model);
+
+            //some data is missing, so get what's missing
+            if (cachedData.Any(item => item is null) || cachedData.Count.Equals(0))
+            {
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
-                string jSon = await _requestManager.SendGetRequest(endpoint);
-                var processedData = _responseDataProcessor.Deserialize(model, jSon);
+                var missingData = GetDataForMissingTimeFrame(model, _cachingHelper.NotFoundKeys);
                 sw.Stop();
-                Console.WriteLine("TIME IT TOOK TO FETCH DATA FROM ECB (Miliseconds): " + sw.ElapsedMilliseconds); ;
+                Console.WriteLine("TIME IT TOOK TO FETCH AND DESERIALIZE DATA FROM ECB (Miliseconds): " + sw.ElapsedMilliseconds);
 
-                await _cachingHelper.SaveDataToCache(processedData);
+                await _cachingHelper.SaveDataToCache(missingData);
                 cachedData = await _cachingHelper.LoadDataFromCache(model);
             }
             return cachedData;
         }
 
+        private List<ICurrencyModel> GetDataForMissingTimeFrame(ICurrencyModel model, HashSet<string> notFoundKeys)
+        {
+            var missingTimeFrameEndpoint = _requestManager.CreateEndpointForMissingTimeFrame(notFoundKeys);
+            string jSon = _requestManager.SendGetRequest(missingTimeFrameEndpoint).Result;
+            var processedData = _responseDataProcessor.Deserialize(model, jSon);
+            return processedData;
+        }
+
         private void AddLookupKeysFromEndpoint(string endpoint)
         {
             var lookupKeys = _requestManager.MapEndpointToLookupKeys(endpoint);
+
+            _cachingHelper.KeysToLookup.Clear();
             foreach (var key in lookupKeys)
             {
                 _cachingHelper.KeysToLookup.Add(key);
             }
-        }
-
-        public int SaveData<T>()
-        {
-            throw new NotImplementedException();
         }
     }
 }
