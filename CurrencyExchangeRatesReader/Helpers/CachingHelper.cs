@@ -12,7 +12,7 @@ namespace CurrencyExchangeRatesReader.Helpers
     public class CachingHelper : ICachingHelper
     {
         private readonly IDistributedCache _distributedCache;
-        public HashSet<string> KeysToLookup { get; set; } = new HashSet<string>();
+        public HashSet<string> LookupKeys { get; set; } = new HashSet<string>();
         public HashSet<string> NotFoundKeys { get; set; } = new HashSet<string>();
 
         public CachingHelper(IDistributedCache distributedCache)
@@ -39,24 +39,29 @@ namespace CurrencyExchangeRatesReader.Helpers
         public async Task<List<string>> LoadDataFromCache(ICurrencyModel data)
         {
             List<string> records = new List<string>();
-            Stopwatch stopWatch = new Stopwatch();
 
+            Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            foreach (var recordId in KeysToLookup)
+            foreach (var recordId in LookupKeys)
             {
-                var record = await _distributedCache.GetRecordAsync<Currency>(recordId);
-                if (record is null && !IsHoliday(recordId))
-                {
-                    NotFoundKeys.Add(recordId);
-                }
-                if (!IsHoliday(recordId))
-                {
-                    records.Add(record);
-                }
+                await AddWorkingDayRecord(records, recordId);
             }
             stopWatch.Stop();
             System.Console.WriteLine("LOADING DATA --- TIME IN MILISECONDS: " + stopWatch.ElapsedMilliseconds);
             return records;
+        }
+
+        private async Task AddWorkingDayRecord(List<string> records, string recordId)
+        {
+            var record = await _distributedCache.GetRecordAsync<Currency>(recordId);
+            if (record is null && !IsHoliday(recordId))
+            {
+                NotFoundKeys.Add(recordId);
+            }
+            if (!IsHoliday(recordId))
+            {
+                records.Add(record);
+            }
         }
 
         private bool IsHoliday(string recordId)
