@@ -1,4 +1,5 @@
-﻿using DataLibrary.Extensions;
+﻿using DataLibrary;
+using DataLibrary.Extensions;
 using DataLibrary.Models;
 using DataLibrary.Services;
 using Microsoft.Extensions.Caching.Distributed;
@@ -12,6 +13,7 @@ namespace CurrencyExchangeRatesReader.Helpers
     {
         private readonly IDistributedCache _distributedCache;
         public HashSet<string> KeysToLookup { get; set; } = new HashSet<string>();
+        public HashSet<string> NotFoundKeys { get; set; } = new HashSet<string>();
 
         public CachingHelper(IDistributedCache distributedCache)
         {
@@ -23,11 +25,14 @@ namespace CurrencyExchangeRatesReader.Helpers
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            KeysToLookup.Clear();
+            // TODO: Instead adding LookupKeys here - adding in ResponseDataProcessor to singleton instance
+            // That way accounts for holidays which shouldn't be in lookup keys
+            // no need for handling lookupKeys here anymore if they're being set during deseriaization or in Request manager
+            //KeysToLookup.Clear();
             foreach (var item in data)
             {
                 var recordId = item.CreateId();
-                KeysToLookup.Add(recordId);
+                //KeysToLookup.Add(recordId);
 
                 //TODO: make optional expire times depend upon data calling frequency
                 await _distributedCache.SetRecordAsync(item, recordId);
@@ -45,11 +50,31 @@ namespace CurrencyExchangeRatesReader.Helpers
             foreach (var recordId in KeysToLookup)
             {
                 var record = await _distributedCache.GetRecordAsync<Currency>(recordId);
-                records.Add(record);
+                if (record is null && !IsHoliday(recordId))
+                {
+                    NotFoundKeys.Add(recordId);
+                }
+                if (!IsHoliday(recordId))
+                {
+                    records.Add(record);
+                }
+                //records.Add(record);
             }
             stopWatch.Stop();
             System.Console.WriteLine("LOADING DATA --- TIME IN MILISECONDS: " + stopWatch.ElapsedMilliseconds);
             return records;
+        }
+
+        private bool IsHoliday(string recordId)
+        {
+            if (SingleLastRequest.Instance.Holidays.Contains(recordId))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

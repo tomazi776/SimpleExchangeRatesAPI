@@ -1,4 +1,7 @@
-﻿using DataLibrary.Models;
+﻿using CurrencyExchangeRatesReader.Helpers;
+using DataLibrary;
+using DataLibrary.Extensions;
+using DataLibrary.Models;
 using DataLibrary.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -45,18 +48,27 @@ namespace CurrencyExchangeRatesReader.Services
                 var currencyNode = timeFrameCurrencyNodes.ElementAt(j);
                 if (IsHoliday(currencyNode))
                 {
-                    j++;
+                    var holidayId = CreateHolidayId(codes, names, dates, i, j);
+                    SingleLastRequest.Instance.Holidays.Add(holidayId);
+                    //j++;
                     continue;
                 }
+                // TODO: Refactor
                 var exchangeRate = currencyNode.Children().First().Children().ToList()[0].Value<decimal>();
                 var dataModel = MapToDataModel(codes, names, dates, i, j, exchangeRate);
 
                 // Print for testing 
-                // TODO: Handle with Logger
+                // TODO: Handle later with Logger
                 PrintDeserializedData(dataModel);
                 currencyrates.Add(dataModel);
             }
             return currencyrates;
+        }
+
+        private string CreateHolidayId(List<string> codes, List<string> names, List<DateTime> dates, int i, int j)
+        {
+            var holidayId = codes[i] + "_" + dates[j].ToString("yyyy_MM_dd");
+            return holidayId;
         }
 
         private static void PrintDeserializedData(ICurrencyModel dataModel)
@@ -68,13 +80,17 @@ namespace CurrencyExchangeRatesReader.Services
 
         private static ICurrencyModel MapToDataModel(List<string> codes, List<string> names, List<DateTime> dates, int i, int j, decimal eRPerTimeFrame)
         {
-            return new Currency()
+
+            var currencyItem = new  Currency()
             {
                 Code = codes[i],
                 Name = names[i],
                 ExchangeRate = eRPerTimeFrame,
                 ObservationDate = dates[j].ToString("yyyy_MM_dd")
             };
+            var recordId = currencyItem.CreateId();
+            SingleLastRequest.Instance.LookupKeys.Add(recordId);
+            return currencyItem;
         }
 
         private void AddCurrenciesCodesNames(List<string> codes, List<string> names, IJEnumerable<JToken> infoNodes )

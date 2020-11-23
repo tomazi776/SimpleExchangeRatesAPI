@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using DataLibrary.Helpers;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,16 @@ namespace CurrencyExchangeRatesReader.Helpers
 {
     public static class EndpointMapper
     {
-        private const string defaultStartDate = "1999-01-04";
-        private const string denominatedInEur = ".EUR";
-        private const string referenceRatesCode = ".SP00";
-        private const string variationMeasure = ".A";
-        private const string optionalParamChar = "?";
+        private const string defaultStartDate = EndpointHelper.defaultStartDate;
+        private const string denominatedInEur = EndpointHelper.denominatedInEur;
+        private const string referenceRatesCode = EndpointHelper.referenceRatesCode;
+        private const string variationMeasure = EndpointHelper.variationMeasure;
+        private const string optionalParamChar = EndpointHelper.optionalParamChar;
 
-        private const string dailyFrequency = "D.";
-        private const string monthlyFrequency = "M.";
+        private const string dailyFrequency = EndpointHelper.dailyFrequency;
+        private const string monthlyFrequency = EndpointHelper.monthlyFrequency;
+
+        //TODO: Refactor
         public static string MapEndpoint(string currencyCodes, DateTime? startDate = null, bool single = false, DateTime? endDate = null)
         {
             string output = string.Empty;
@@ -26,79 +29,56 @@ namespace CurrencyExchangeRatesReader.Helpers
             string modifiedStartDate = string.Empty;
             string modifiedEndDate = string.Empty;
 
-            // TODO: change the rest to StringBuilder and refactor, add possibility to specify frequency
             StringBuilder sb = new StringBuilder();
             // care only for startDate
             if (single is true)
             {
                 if (startDate != null)
                 {
-                    //output = sb
-                    //    .Append(dailyFrequency)
-                    //    .Append(currencyCodes)
-                    //    .Append(denominatedInEur)
-                    //    .Append(referenceRatesCode)
-                    //    .Append(variationMeasure)
-                    //    .Append(optionalParamChar)
-                    //    .Append("startPeriod=")
-                    //    .Append(start)
-                    //    .Append("&")
-                    //    .Append("endPeriod=")
-                    //    .Append(start).ToString();
-                    // instead 
                     modifiedStartDate = start;
                     modifiedEndDate = start;
                 }
             }
+
             //care for both
             else
             {
                 //set start date to default
                 if (startDate is null)
                 {
-                    //output = dailyFrequency + currencyCodes + denominatedInEur + referenceRatesCode + variationMeasure
-                    //    + optionalParamChar + "startPeriod=" + defaultStartDate;
+
                     modifiedStartDate = defaultStartDate;
                 }
                 //set startDate to its value
                 else
                 {
-                    //output = dailyFrequency + currencyCodes + denominatedInEur + referenceRatesCode + variationMeasure
-                    //    + optionalParamChar + "startPeriod=" + start;
                     modifiedStartDate = start;
-
                 }
-
 
                 //set end date to default (now)
                 if (endDate is null)
                 {
-                    //output = dailyFrequency + currencyCodes + denominatedInEur + referenceRatesCode + variationMeasure
-                    //    + optionalParamChar + "startPeriod=" + start + "&" + "endPeriod=" + DateTime.Now.ToString("yyyy-MM-dd");
                     modifiedEndDate = DateTime.Now.ToString("yyyy-MM-dd");
                 }
                 //set end date to its value
                 else
                 {
-                    //output = dailyFrequency + currencyCodes + denominatedInEur + referenceRatesCode + variationMeasure
-                    //    + optionalParamChar + "startPeriod=" + start + "&" + "endPeriod=" + end;
                     modifiedEndDate = end;
                 }
             }
 
             output = sb
-    .Append(dailyFrequency)
-    .Append(currencyCodes)
-    .Append(denominatedInEur)
-    .Append(referenceRatesCode)
-    .Append(variationMeasure)
-    .Append(optionalParamChar)
-    .Append("startPeriod=")
-    .Append(modifiedStartDate)
-    .Append("&")
-    .Append("endPeriod=")
-    .Append(modifiedEndDate).ToString();
-
+                .Append(dailyFrequency)
+                .Append(currencyCodes)
+                .Append(denominatedInEur)
+                .Append(referenceRatesCode)
+                .Append(variationMeasure)
+                .Append(optionalParamChar)
+                .Append("startPeriod=")
+                .Append(modifiedStartDate)
+                .Append("&")
+                .Append("endPeriod=")
+                .Append(modifiedEndDate).ToString();
             return output;
         }
     }

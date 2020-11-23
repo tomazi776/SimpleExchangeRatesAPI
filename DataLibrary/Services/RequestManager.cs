@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataLibrary.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -10,7 +11,7 @@ namespace DataLibrary.Services
 {
     public class RequestManager : IRequestManager
     {
-        public string Endpoint { get; set; }
+        private const string BaseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
         public async Task<string> SendGetRequest(string endpoint)
         {
             HttpRequestMessage getRequest = CreateGetRequest(endpoint);
@@ -23,24 +24,17 @@ namespace DataLibrary.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                HandleErrorCodes(response.StatusCode);
                 return null;
             }
             return await response.Content.ReadAsStringAsync();
         }
 
-        private void HandleErrorCodes(HttpStatusCode httpStatusCode)
-        {
-            if (httpStatusCode == HttpStatusCode.Unauthorized)
-            {
-                //TODO: open page showing error
-            }
-        }
 
         public List<string> MapEndpointToLookupKeys(string endpoint)
         {
-            var queryData = endpoint.Split('.', '+', '?', '=', '&');
             List<string> lookupKeys;
+
+            var queryData = endpoint.Split('.', '+', '?', '=', '&');
             List<DateTime> startEndDates = new List<DateTime>();
             List<string> codes;
 
@@ -56,12 +50,88 @@ namespace DataLibrary.Services
 
         private List<string> CreateRange(List<DateTime> dates)
         {
-            List<DateTime> allDates = new List<DateTime>();
+            var datesRange = CreateRangeForWorkingDays(dates[0], dates[1]);
+            return FormatDatesToStrings(datesRange);
+        }
+
+        public string CreateEndpointForMissingTimeFrame(HashSet<string> keys)
+        {
+            string missingDataEndpoint = string.Empty;
+            var codes = GetCodesData(keys);
+
+            var delimitedCodes = ApplyDelimiters(codes);
+            var startDate = GetDatePart(keys.First());
+            var endDate = GetDatePart(keys.Last());
+
+            StringBuilder sb = new StringBuilder();
+            missingDataEndpoint = sb
+                     .Append(EndpointHelper.dailyFrequency)
+                     .Append(delimitedCodes)
+                     .Append(EndpointHelper.denominatedInEur)
+                     .Append(EndpointHelper.referenceRatesCode)
+                     .Append(EndpointHelper.variationMeasure)
+                     .Append(EndpointHelper.optionalParamChar)
+                     .Append("startPeriod=")
+                     .Append(startDate)
+                     .Append("&")
+                     .Append("endPeriod=")
+                     .Append(endDate).ToString();
+            return missingDataEndpoint;
+        }
+
+        private string ApplyDelimiters(HashSet<string> codes)
+        {
+            List<string> newCodes = new List<string>(codes);
+            var onlyCodes = string.Empty;
+            if (newCodes.Count > 1)
+            {
+                foreach (var code in codes)
+                {
+                    onlyCodes += code + "+";
+                }
+                int trailingIndex = onlyCodes.LastIndexOf('+');
+                onlyCodes.Remove(trailingIndex);
+            }
+            else
+            {
+                onlyCodes = newCodes[0];
+            }
+            return onlyCodes;
+        }
+
+        private HashSet<string> GetCodesData(HashSet<string> keys)
+        {
+            HashSet<string> codes = new HashSet<string>();
+            foreach (var key in keys)
+            {
+                var keyData = key.Split('_');
+                var codePart = keyData[0];
+                codes.Add(codePart);
+            }
+            return codes;
+        }
+
+        private string GetDatePart(string key)
+        {
+            var keyData = key.Split('_');
+            string date = keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
+            return date;
+        }
+
+        private static List<string> FormatDatesToStrings(List<DateTime> allDates)
+        {
             List<string> allDatesInStrings = new List<string>();
+            foreach (var date in allDates)
+            {
+                var dateInString = date.ToString("yyyy_MM_dd");
+                allDatesInStrings.Add(dateInString);
+            }
+            return allDatesInStrings;
+        }
 
-            var startDate = dates[0];
-            var endDate = dates[1];
-
+        private static List<DateTime> CreateRangeForWorkingDays(DateTime startDate, DateTime endDate)
+        {
+            List<DateTime> allDates = new List<DateTime>();
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
                 if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
@@ -69,12 +139,7 @@ namespace DataLibrary.Services
                     allDates.Add(date);
                 }
             }
-            foreach (var date in allDates)
-            {
-                var dateInString = date.ToString("yyyy_MM_dd");
-                allDatesInStrings.Add(dateInString);
-            }
-            return allDatesInStrings;
+            return allDates;
         }
 
         private List<string> CombineDatesWithCodes(List<string> dates, List<string> codes)
@@ -237,6 +302,11 @@ namespace DataLibrary.Services
             requestMsg.Headers.Add("Accept", "application/json");
             requestMsg.Headers.Add("Accept-Encoding", "deflate");
             return requestMsg;
+        }
+
+        public void SetLastRequestEndpoint(string endpoint)
+        {
+            SingleLastRequest.Instance.Endpoint = endpoint;
         }
     }
 }
