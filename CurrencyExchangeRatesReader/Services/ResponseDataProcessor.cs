@@ -50,7 +50,6 @@ namespace CurrencyExchangeRatesReader.Services
                 {
                     var holidayId = CreateHolidayId(codes, names, dates, i, j);
                     SingleLastRequest.Instance.Holidays.Add(holidayId);
-                    //j++;
                     continue;
                 }
                 // TODO: Refactor

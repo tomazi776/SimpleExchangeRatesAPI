@@ -25,14 +25,9 @@ namespace CurrencyExchangeRatesReader.Helpers
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            // TODO: Instead adding LookupKeys here - adding in ResponseDataProcessor to singleton instance
-            // That way accounts for holidays which shouldn't be in lookup keys
-            // no need for handling lookupKeys here anymore if they're being set during deseriaization or in Request manager
-            //KeysToLookup.Clear();
             foreach (var item in data)
             {
                 var recordId = item.CreateId();
-                //KeysToLookup.Add(recordId);
 
                 //TODO: make optional expire times depend upon data calling frequency
                 await _distributedCache.SetRecordAsync(item, recordId);
@@ -58,7 +53,6 @@ namespace CurrencyExchangeRatesReader.Helpers
                 {
                     records.Add(record);
                 }
-                //records.Add(record);
             }
             stopWatch.Stop();
             System.Console.WriteLine("LOADING DATA --- TIME IN MILISECONDS: " + stopWatch.ElapsedMilliseconds);
@@ -67,14 +61,7 @@ namespace CurrencyExchangeRatesReader.Helpers
 
         private bool IsHoliday(string recordId)
         {
-            if (SingleLastRequest.Instance.Holidays.Contains(recordId))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return SingleLastRequest.Instance.Holidays.Contains(recordId);
         }
     }
 }
