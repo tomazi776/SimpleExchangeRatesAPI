@@ -83,20 +83,21 @@ namespace DataLibrary.Services
         {
             List<string> newCodes = new List<string>(codes);
             var onlyCodes = string.Empty;
+            var output = string.Empty;
             if (newCodes.Count > 1)
             {
                 foreach (var code in codes)
                 {
                     onlyCodes += code + "+";
                 }
-                int trailingIndex = onlyCodes.LastIndexOf('+');
-                onlyCodes.Remove(trailingIndex);
+                //int trailingIndex = onlyCodes.LastIndexOf('+')-1;
+                output = onlyCodes.TrimEnd('+');
             }
             else
             {
-                onlyCodes = newCodes[0];
+                output = newCodes[0];
             }
-            return onlyCodes;
+            return output;
         }
 
         private HashSet<string> GetCodesData(HashSet<string> keys)

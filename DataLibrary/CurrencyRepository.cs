@@ -62,10 +62,10 @@ namespace DataLibrary
         {
             var lookupKeys = _requestManager.MapEndpointToLookupKeys(endpoint);
 
-            _cachingHelper.KeysToLookup.Clear();
+            _cachingHelper.LookupKeys.Clear();
             foreach (var key in lookupKeys)
             {
-                _cachingHelper.KeysToLookup.Add(key);
+                _cachingHelper.LookupKeys.Add(key);
             }
         }
     }

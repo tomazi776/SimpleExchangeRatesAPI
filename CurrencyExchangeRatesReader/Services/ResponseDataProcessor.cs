@@ -30,17 +30,25 @@ namespace CurrencyExchangeRatesReader.Services
 
             AddCurrenciesCodesNames(codes, names, currenciesInfoNodes);
             AddCurrenciesDates(dates, dateRanges);
+            var currencies = MapAllCurrenciesInDateRange(currenciesNodes, codes, names, dates);
+            return currencies;
+        }
 
+        private List<ICurrencyModel> MapAllCurrenciesInDateRange(JEnumerable<JToken> currenciesNodes, List<string> codes, List<string> names, List<DateTime> dates)
+        {
             var currencies = new List<ICurrencyModel>();
             for (int i = 0; i < currenciesNodes.Count(); i++)
             {
                 var timeFrameCurrencyNodes = currenciesNodes.Children().ToList()[i].Children().Last().Children().ToList().Children();
-                currencies = GetMappedDataForTimeFrames(codes, names, dates, i, timeFrameCurrencyNodes);
+                // Add instead assigning
+                var currencyExchangeRates = GetMappedCurrencyForTimeFrames(codes, names, dates, i, timeFrameCurrencyNodes);
+                currencies.AddRange(currencyExchangeRates);
             }
+
             return currencies;
         }
 
-        private List<ICurrencyModel> GetMappedDataForTimeFrames(List<string> codes, List<string> names, List<DateTime> dates, int i, IJEnumerable<JToken> timeFrameCurrencyNodes)
+        private List<ICurrencyModel> GetMappedCurrencyForTimeFrames(List<string> codes, List<string> names, List<DateTime> dates, int i, IJEnumerable<JToken> timeFrameCurrencyNodes)
         {
             List<ICurrencyModel> currencyrates = new List<ICurrencyModel>();
             for (int j = 0; j < timeFrameCurrencyNodes.Count(); j++)
