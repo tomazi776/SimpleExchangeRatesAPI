@@ -12,7 +12,7 @@ For now - (it's a BETA version) you can run this project locally on your compute
 
 ![](https://raw.githubusercontent.com/tomazi776/simpleexchangeratesapi/main/images/example.png)
 
-![](https://raw.githubusercontent.com/tomazi776/simpleexchangeratesapi/main/images/jpy_usd_pln.png)
+![](https://raw.githubusercontent.com/tomazi776/simpleexchangeratesapi/main/images/JPY_USD_PLN.png)
 
 Data is coming in no particular order, although sorting by currency code is planned for next version.
 
@@ -27,7 +27,7 @@ Endpoint structure is fairly simple and straightforward, but for point of refere
 **Endpoint composition:**
 
 *localhost* /
-![](https://raw.githubusercontent.com/tomazi776/simpleexchangeratesapi/main/images/endpoint.png)
+![](https://raw.githubusercontent.com/tomazi776/simpleexchangeratesapi/main/images/Endpoint.png)
 
 ***
 
