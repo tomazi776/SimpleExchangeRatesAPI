@@ -52,14 +52,14 @@ namespace CurrencyExchangeRatesReader.Controllers
         /// <response code="400">If the item is null</response> 
         /// <response code="401">If the supplied APIKey in header is not valid</response> 
         /// <response code="404">If exchange rate not found for date in given date range or for invalid endpoint</response>
-        [ApiKeyAuth]
+        //[ApiKeyAuth]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status406NotAcceptable)]
         [Produces("application/json")]
-        [HttpGet("Get/{currencyCodes:codesConstraint}/{startDate:datetime?}/{single:bool?}/{endDate:datetime?}")]
+        [HttpGet("{currencyCodes:codesConstraint}/{startDate:datetime?}/{single:bool?}/{endDate:datetime?}")]
         public IEnumerable<JsonDocument> GetExchangeRates([FromHeader]string apiKey, 
             string currencyCodes, DateTime? startDate = null, bool single = false, DateTime? endDate = null)
         {
