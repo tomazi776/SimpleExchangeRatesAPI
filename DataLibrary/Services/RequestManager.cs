@@ -12,6 +12,7 @@ namespace DataLibrary.Services
     public class RequestManager : IRequestManager
     {
         private const string BaseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
+        private DateTime begginingECBDate = new DateTime(1999, 1, 4);
         public async Task<string> SendGetRequest(string endpoint)
         {
             HttpRequestMessage getRequest = CreateGetRequest(endpoint);
@@ -22,10 +23,12 @@ namespace DataLibrary.Services
                 response = await client.SendAsync(getRequest);
             }
 
+            //refactor to return status code
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return response.StatusCode.ToString();
             }
+
             return await response.Content.ReadAsStringAsync();
         }
 
@@ -35,23 +38,17 @@ namespace DataLibrary.Services
             List<string> lookupKeys;
 
             var queryData = endpoint.Split('.', '+', '?', '=', '&');
-            List<DateTime> startEndDates = new List<DateTime>();
+            List<DateTime> outputDates = new List<DateTime>();
             List<string> codes;
 
-            MapTimePeriods(queryData, startEndDates, "startPeriod");
-            MapTimePeriods(queryData, startEndDates, "endPeriod");
+            outputDates.Add(MapDate(queryData, "startPeriod"));
+            outputDates.Add(MapDate(queryData, "endPeriod"));
 
-            var dates = CreateRange(startEndDates);
+            var formattedDates = DateTimeHelper.CreateRange(outputDates);
 
             codes = MapCurrencyCodes(queryData);
-            lookupKeys = CombineDatesWithCodes(dates, codes);
+            lookupKeys = CombineDatesWithCodes(formattedDates, codes);
             return lookupKeys;
-        }
-
-        private List<string> CreateRange(List<DateTime> dates)
-        {
-            var datesRange = CreateRangeForWorkingDays(dates[0], dates[1]);
-            return FormatDatesToStrings(datesRange);
         }
 
         public string CreateEndpointForMissingTimeFrame(HashSet<string> keys)
@@ -90,7 +87,6 @@ namespace DataLibrary.Services
                 {
                     onlyCodes += code + "+";
                 }
-                //int trailingIndex = onlyCodes.LastIndexOf('+')-1;
                 output = onlyCodes.TrimEnd('+');
             }
             else
@@ -115,38 +111,12 @@ namespace DataLibrary.Services
         private string GetDatePart(string key)
         {
             var keyData = key.Split('_');
-            string date = keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
-            return date;
-        }
-
-        private static List<string> FormatDatesToStrings(List<DateTime> allDates)
-        {
-            List<string> allDatesInStrings = new List<string>();
-            foreach (var date in allDates)
-            {
-                var dateInString = date.ToString("yyyy_MM_dd");
-                allDatesInStrings.Add(dateInString);
-            }
-            return allDatesInStrings;
-        }
-
-        private static List<DateTime> CreateRangeForWorkingDays(DateTime startDate, DateTime endDate)
-        {
-            List<DateTime> allDates = new List<DateTime>();
-            for (var date = startDate; date <= endDate; date = date.AddDays(1))
-            {
-                if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
-                {
-                    allDates.Add(date);
-                }
-            }
-            return allDates;
+            return keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
         }
 
         private List<string> CombineDatesWithCodes(List<string> dates, List<string> codes)
         {
             List<string> lookupKeys = new List<string>();
-
             foreach (var date in dates)
             {
                 foreach (var code in codes)
@@ -161,14 +131,14 @@ namespace DataLibrary.Services
         private List<string> MapCurrencyCodes(string[] queryData)
         {
             List<string> codes = new List<string>();
-            var index = Array.FindIndex(queryData, item => item == "SP00");
-            index--;
+            var codeIndex = Array.FindIndex(queryData, item => item == "SP00");
+            codeIndex--;
 
-            //skip first
-            while (index > 1)
+            while (codeIndex > 1)
             {
-                index--;
-                codes.Add(queryData[index]);
+                //skip last (denomination currCode)
+                codeIndex--;
+                codes.Add(queryData[codeIndex]);
             }
 
             // support wildcard to get all currencies
@@ -212,87 +182,42 @@ namespace DataLibrary.Services
             return codes;
         }
 
-        private void MapTimePeriods(string[] queryData, List<DateTime> startEndDates, string periodName)
+        private DateTime MapDate(string[] queryData, string periodName)
         {
-            DateTime outputDate;
-            DateTime startEndDate;
-
-            //path contains start or end date
-            if (queryData.Any(item => item == periodName))
-            {
-                var periodIndex = Array.FindIndex(queryData, item => item == periodName);
-                periodIndex++;
-
-                var startEndDateStr = queryData[periodIndex];
-                var dateParts = startEndDateStr.Split('-');
-                startEndDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
-
-
-                if (periodName == "startPeriod")
-                {
-                    outputDate = startEndDate;
-                }
-                //Get or modify date for endDate
-                else
-                {
-                    outputDate = GetModify(startEndDate);
-                }
-
-                startEndDates.Add(outputDate);
-            }
-            //Path doesn't contain startDate or endDate
-            else
-            {
-                if (periodName == "startPeriod")
-                {
-                    //ECB beginning day for api data
-                    outputDate = new DateTime(1999, 1, 4);
-                }
-                // if path has endDate but doesn't have "single record" constraint - assign Today's date to endDate
-                else if (queryData.Any(item => item == "true"))
-                {
-                    outputDate = DateTime.Now;
-                }
-                else
-                {
-                    var startPeriodIndex = Array.FindIndex(queryData, item => item == "startPeriod");
-                    startPeriodIndex++;
-
-                    //CreateDate from index refactor -> repeated ^
-                    var startEndDateStr = queryData[startPeriodIndex];
-                    var dateParts = startEndDateStr.Split('-');
-                    outputDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
-                }
-                startEndDates.Add(outputDate);
-            }
+            DateTime outputDate = queryData.Any(item => item == periodName)
+                ? MapCustomStartEndDate(queryData, periodName)
+                : AssignDefaultStartEndDate(queryData, periodName);
+            return outputDate;
         }
 
-        private DateTime GetModify(DateTime endDate)
+        private DateTime AssignDefaultStartEndDate(string[] queryData, string periodName)
         {
-            DateTime output;
-            // TODO: create extensions for some DateTime operations
+            DateTime startEndDate;
+            if (periodName == "startPeriod")
+            {
+                //ECB beginning date for api data
+                startEndDate = begginingECBDate;
+                return startEndDate;
+            }
 
-            // check if endDate is today
-            if (endDate.Day == DateTime.Now.Day)
-            {
-                //check if ECB data available
-                if (DateTime.Now.Hour >= 16)
-                {
-                    output = endDate;
-                }
-                else
-                {
-                    var dayNum = DateTime.Now.Day;
-                    dayNum--;
-                    output = new DateTime(DateTime.Now.Year, DateTime.Now.Month, dayNum);
-                }
-            }
-            // endDate is not today
-            else
-            {
-                output = endDate;
-            }
-            return output;
+            return queryData.Any(item => item == "true")
+                ? CreateDateFromQuery(queryData, "startPeriod")
+                : CreateDateFromQuery(queryData, periodName);
+        }
+
+        private DateTime MapCustomStartEndDate(string[] queryData, string periodName)
+        {
+            var startEndDate = CreateDateFromQuery(queryData, periodName);
+            return periodName == "startPeriod" ? startEndDate : DateTimeHelper.GetModify(startEndDate);
+        }
+
+        private DateTime CreateDateFromQuery(string[] queryData, string periodName)
+        {
+            var periodIndex = Array.FindIndex(queryData, item => item == periodName);
+            var startEndDateStr = queryData[++periodIndex];
+
+            var dateParts = startEndDateStr.Split('-');
+            return new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
         }
 
         private HttpRequestMessage CreateGetRequest(string endpoint)
