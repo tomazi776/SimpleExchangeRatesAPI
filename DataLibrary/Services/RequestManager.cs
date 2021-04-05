@@ -1,4 +1,5 @@
-﻿using DataLibrary.Helpers;
+﻿using DataLibrary.Constants;
+using DataLibrary.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,10 @@ namespace DataLibrary.Services
 {
     public class RequestManager : IRequestManager
     {
+
         private const string BaseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
         private DateTime begginingECBDate = new DateTime(1999, 1, 4);
+        private char underscore = Convert.ToChar(StringConstants.Underscore);
         public async Task<string> SendGetRequest(string endpoint)
         {
             HttpRequestMessage getRequest = CreateGetRequest(endpoint);
@@ -81,7 +84,7 @@ namespace DataLibrary.Services
             List<string> newCodes = new List<string>(codes);
             var onlyCodes = string.Empty;
             var output = string.Empty;
-            if (newCodes.Count > 1)
+            if (newCodes.Any() && newCodes.Count > 1)
             {
                 foreach (var code in codes)
                 {
@@ -110,7 +113,7 @@ namespace DataLibrary.Services
 
         private string GetDatePart(string key)
         {
-            var keyData = key.Split('_');
+            var keyData = key.Split(StringConstants.Underscore);
             return keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
         }
 
@@ -121,7 +124,7 @@ namespace DataLibrary.Services
             {
                 foreach (var code in codes)
                 {
-                    var key = code + "_" + date;
+                    var key = code + StringConstants.Underscore + date;
                     lookupKeys.Add(key);
                 }
             }

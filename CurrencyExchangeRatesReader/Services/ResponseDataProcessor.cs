@@ -1,6 +1,8 @@
 ﻿using CurrencyExchangeRatesReader.Helpers;
 using DataLibrary;
+using DataLibrary.Constants;
 using DataLibrary.Extensions;
+using DataLibrary.Helpers;
 using DataLibrary.Models;
 using DataLibrary.Services;
 using Newtonsoft.Json;
@@ -74,7 +76,7 @@ namespace CurrencyExchangeRatesReader.Services
 
         private string CreateHolidayId(List<string> codes, List<string> names, List<DateTime> dates, int i, int j)
         {
-            var holidayId = codes[i] + "_" + dates[j].ToString("yyyy_MM_dd");
+            var holidayId = codes[i] + StringConstants.Underscore + dates[j].ToString(DateTimeHelper.YearMonthDayUnderscoredFormat);
             return holidayId;
         }
 
@@ -87,13 +89,13 @@ namespace CurrencyExchangeRatesReader.Services
 
         private static ICurrencyModel MapToDataModel(List<string> codes, List<string> names, List<DateTime> dates, int i, int j, decimal eRPerTimeFrame)
         {
-
+            //changes in format here must be reflected in distributed cache serialization
             var currencyItem = new  Currency()
             {
                 Code = codes[i],
                 Name = names[i],
                 ExchangeRate = eRPerTimeFrame,
-                ObservationDate = dates[j].ToString("yyyy_MM_dd")
+                ObservationDate = dates[j].ToString(DateTimeHelper.YearMonthDayUnderscoredFormat)
             };
             var recordId = currencyItem.CreateId();
             SingleLastRequest.Instance.LookupKeys.Add(recordId);

@@ -1,4 +1,5 @@
-﻿using DataLibrary.Models;
+﻿using DataLibrary.Constants;
+using DataLibrary.Models;
 
 namespace DataLibrary.Extensions
 {
@@ -6,7 +7,7 @@ namespace DataLibrary.Extensions
     {
         public static string CreateId<T>(this T data) where T : ICurrencyModel
         {
-            return data.Code + "_" + data.ObservationDate;
+            return data.Code + StringConstants.Underscore + data.ObservationDate;
         }
     }
 }

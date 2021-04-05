@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataLibrary.Constants;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,6 +7,9 @@ namespace DataLibrary.Helpers
 {
     public static class DateTimeHelper
     {
+        public static string YearMonthDayDashedFormat = $"yyyy{StringConstants.EnDash}MM{StringConstants.EnDash}dd";
+        public static string YearMonthDayUnderscoredFormat = $"yyyy{StringConstants.Underscore}MM{StringConstants.Underscore}dd";
+        
         public static DateTime GetModify(DateTime endDate)
         {
             return (endDate.Day == DateTime.Now.Day) ? AssignAvailableDate(endDate) : endDate;
@@ -51,7 +55,7 @@ namespace DataLibrary.Helpers
             List<string> allDatesInStrings = new List<string>();
             foreach (var date in allDates)
             {
-                var dateInString = date.ToString("yyyy_MM_dd");
+                var dateInString = date.ToString(YearMonthDayUnderscoredFormat);
                 allDatesInStrings.Add(dateInString);
             }
             return allDatesInStrings;

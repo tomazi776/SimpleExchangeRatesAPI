@@ -63,7 +63,7 @@ namespace CurrencyExchangeRatesReader.Controllers
         public IEnumerable<JsonDocument> GetExchangeRates([FromHeader]string apiKey, 
             string currencyCodes, DateTime? startDate = null, bool single = false, DateTime? endDate = null)
         {
-            var endpoint = EndpointMapper.MapEndpoint(currencyCodes, startDate, single, endDate);
+            var endpoint = InitialEndpointMapper.MapEndpoint(currencyCodes, startDate, single, endDate);
             var currencyData = _currencyRepository.GetData(_currencyModel, endpoint).Result;
             List<JsonDocument> jsonObjects = new List<JsonDocument>();
 

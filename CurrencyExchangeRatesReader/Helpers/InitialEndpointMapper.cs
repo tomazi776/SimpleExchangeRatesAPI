@@ -1,4 +1,5 @@
-﻿using DataLibrary.Helpers;
+﻿using DataLibrary.Constants;
+using DataLibrary.Helpers;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CurrencyExchangeRatesReader.Helpers
 {
-    public static class EndpointMapper
+    public static class InitialEndpointMapper
     {
         private const string defaultStartDate = EndpointHelper.defaultStartDate;
         private const string denominatedInEur = EndpointHelper.denominatedInEur;
@@ -23,8 +24,8 @@ namespace CurrencyExchangeRatesReader.Helpers
         public static string MapEndpoint(string currencyCodes, DateTime? startDate = null, bool single = false, DateTime? endDate = null)
         {
             string output = string.Empty;
-            string start = startDate?.ToString("yyyy-MM-dd");
-            string end = endDate?.ToString("yyyy-MM-dd");
+            string start = startDate?.ToString(DateTimeHelper.YearMonthDayDashedFormat);
+            string end = endDate?.ToString(DateTimeHelper.YearMonthDayDashedFormat);
 
             string modifiedStartDate = string.Empty;
             string modifiedEndDate = string.Empty;
@@ -58,7 +59,7 @@ namespace CurrencyExchangeRatesReader.Helpers
                 //set end date to default (now)
                 if (endDate is null)
                 {
-                    modifiedEndDate = DateTime.Now.ToString("yyyy-MM-dd");
+                    modifiedEndDate = DateTime.Now.ToString(DateTimeHelper.YearMonthDayDashedFormat);
                 }
                 //set end date to its value
                 else
