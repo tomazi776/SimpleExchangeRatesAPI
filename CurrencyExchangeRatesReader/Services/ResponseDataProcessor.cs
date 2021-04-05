@@ -89,13 +89,13 @@ namespace CurrencyExchangeRatesReader.Services
 
         private static ICurrencyModel MapToDataModel(List<string> codes, List<string> names, List<DateTime> dates, int i, int j, decimal eRPerTimeFrame)
         {
-            //changes in format here must be reflected in distributed cache serialization
+            //changes in date format here must be reflected in distributed cache serialization (DataExtensions)
             var currencyItem = new  Currency()
             {
                 Code = codes[i],
                 Name = names[i],
                 ExchangeRate = eRPerTimeFrame,
-                ObservationDate = dates[j].ToString(DateTimeHelper.YearMonthDayUnderscoredFormat)
+                ObservationDate = dates[j].ToString(DateTimeHelper.YearMonthDayDashedFormat)
             };
             var recordId = currencyItem.CreateId();
             SingleLastRequest.Instance.LookupKeys.Add(recordId);

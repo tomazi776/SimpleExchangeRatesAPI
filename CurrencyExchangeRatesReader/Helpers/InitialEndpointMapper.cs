@@ -59,6 +59,7 @@ namespace CurrencyExchangeRatesReader.Helpers
                 //set end date to default (now)
                 if (endDate is null)
                 {
+                    // Date dormat should remain dashed
                     modifiedEndDate = DateTime.Now.ToString(DateTimeHelper.YearMonthDayDashedFormat);
                 }
                 //set end date to its value

@@ -55,7 +55,8 @@ namespace DataLibrary.Helpers
             List<string> allDatesInStrings = new List<string>();
             foreach (var date in allDates)
             {
-                var dateInString = date.ToString(YearMonthDayUnderscoredFormat);
+                // date format to be changed
+                var dateInString = date.ToString(YearMonthDayDashedFormat);
                 allDatesInStrings.Add(dateInString);
             }
             return allDatesInStrings;

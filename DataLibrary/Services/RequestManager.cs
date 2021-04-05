@@ -104,7 +104,7 @@ namespace DataLibrary.Services
             HashSet<string> codes = new HashSet<string>();
             foreach (var key in keys)
             {
-                var keyData = key.Split('_');
+                var keyData = key.Split(StringConstants.Underscore);
                 var codePart = keyData[0];
                 codes.Add(codePart);
             }
@@ -113,8 +113,8 @@ namespace DataLibrary.Services
 
         private string GetDatePart(string key)
         {
-            var keyData = key.Split(StringConstants.Underscore);
-            return keyData[1] + "-" + keyData[2] + "-"+ keyData[3];
+            var date = key.Split(StringConstants.Underscore).Last();
+            return date;
         }
 
         private List<string> CombineDatesWithCodes(List<string> dates, List<string> codes)
