@@ -1,4 +1,5 @@
 ﻿using DataLibrary.Constants;
+using DataLibrary.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,57 +10,64 @@ namespace DataLibrary.Helpers
     {
         public static string YearMonthDayDashedFormat = $"yyyy{StringConstants.EnDash}MM{StringConstants.EnDash}dd";
         public static string YearMonthDayUnderscoredFormat = $"yyyy{StringConstants.Underscore}MM{StringConstants.Underscore}dd";
-        
-        public static DateTime GetModify(DateTime endDate)
+        public static readonly bool isTimeEcbDataAvailable = DateTime.Now.Hour >= 16;
+
+        public static List<string> CreateWorkDatesFrom(List<DateTime> dates)
         {
-            return (endDate.Day == DateTime.Now.Day) ? AssignAvailableDate(endDate) : endDate;
+            return ConvertToString(GetWorkDates(dates[0], dates[1]));
         }
 
-        public static List<string> CreateRange(List<DateTime> dates)
+        public static DateTime GetLastAvailableECB(DateTime today)
         {
-            var datesRange = CreateRangeForWorkingDays(dates[0], dates[1]);
-            return FormatDatesToStrings(datesRange);
-        }
-
-        private static DateTime AssignAvailableDate(DateTime endDate)
-        {
-            DateTime output;
-            // ECB data available
-            if (DateTime.Now.Hour >= 16)
+            DateTime availDate;
+            //first check if weekend so to get supposedly workDay
+            if (!today.IsWorkday())
             {
-                output = endDate;
+                availDate = GetLastWorkdayInstead(today);
             }
+            // today is supposedly workday so check for time if data available
+            // TODO: add check for european holidays
             else
             {
-                var dayNum = DateTime.Now.Day;
-                output = new DateTime(DateTime.Now.Year, DateTime.Now.Month, --dayNum);
+                availDate = isTimeEcbDataAvailable ? today : today.GetPreviousDate(-1);
             }
-            return output;
+            return availDate;
         }
 
-        private static List<DateTime> CreateRangeForWorkingDays(DateTime startDate, DateTime endDate)
+        private static DateTime GetLastWorkdayInstead(DateTime date)
         {
-            List<DateTime> allDates = new List<DateTime>();
+            switch (date.DayOfWeek)
+            {
+                case DayOfWeek.Sunday:
+                    return date.GetPreviousDate(-2);
+                case DayOfWeek.Saturday:
+                    return date.GetPreviousDate(-1);
+                default:
+                    return date.GetPreviousDate(0);
+            }
+        }
+
+        private static List<DateTime> GetWorkDates(DateTime startDate, DateTime endDate)
+        {
+            List<DateTime> dates = new List<DateTime>();
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
-                if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+                if (date.IsWorkday())
                 {
-                    allDates.Add(date);
+                    dates.Add(date);
                 }
             }
-            return allDates;
+            return dates;
         }
 
-        private static List<string> FormatDatesToStrings(List<DateTime> allDates)
+        private static List<string> ConvertToString(List<DateTime> inputDates)
         {
-            List<string> allDatesInStrings = new List<string>();
-            foreach (var date in allDates)
+            List<string> dates = new List<string>();
+            foreach (var date in inputDates)
             {
-                // date format to be changed
-                var dateInString = date.ToString(YearMonthDayDashedFormat);
-                allDatesInStrings.Add(dateInString);
+                dates.Add(date.ToString(YearMonthDayDashedFormat));
             }
-            return allDatesInStrings;
+            return dates;
         }
     }
 }

@@ -16,14 +16,13 @@ namespace CurrencyExchangeRatesReader.Helpers
         private const string referenceRatesCode = EndpointHelper.referenceRatesCode;
         private const string variationMeasure = EndpointHelper.variationMeasure;
         private const string optionalParamChar = EndpointHelper.optionalParamChar;
-
         private const string dailyFrequency = EndpointHelper.dailyFrequency;
         private const string monthlyFrequency = EndpointHelper.monthlyFrequency;
 
         //TODO: Refactor
         public static string MapEndpoint(string currencyCodes, DateTime? startDate = null, bool single = false, DateTime? endDate = null)
         {
-            string output = string.Empty;
+            string endpoint = string.Empty;
             string start = startDate?.ToString(DateTimeHelper.YearMonthDayDashedFormat);
             string end = endDate?.ToString(DateTimeHelper.YearMonthDayDashedFormat);
 
@@ -31,23 +30,24 @@ namespace CurrencyExchangeRatesReader.Helpers
             string modifiedEndDate = string.Empty;
 
             StringBuilder sb = new StringBuilder();
-            // care only for startDate
+
+            //TODO: Refactor extract Method
+            // care only for startDate as request doesn't specify range but single date
             if (single is true)
             {
-                if (startDate != null)
+                if (start != null)
                 {
                     modifiedStartDate = start;
                     modifiedEndDate = start;
                 }
             }
 
-            //care for both
+            //care for both as request specifies range on dates
             else
             {
                 //set start date to default
                 if (startDate is null)
                 {
-
                     modifiedStartDate = defaultStartDate;
                 }
                 //set startDate to its value
@@ -69,7 +69,7 @@ namespace CurrencyExchangeRatesReader.Helpers
                 }
             }
 
-            output = sb
+            endpoint = sb
                 .Append(dailyFrequency)
                 .Append(currencyCodes)
                 .Append(denominatedInEur)
@@ -81,7 +81,7 @@ namespace CurrencyExchangeRatesReader.Helpers
                 .Append("&")
                 .Append("endPeriod=")
                 .Append(modifiedEndDate).ToString();
-            return output;
+            return endpoint;
         }
     }
 }

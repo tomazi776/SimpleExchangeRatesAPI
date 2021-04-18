@@ -1,5 +1,7 @@
 ﻿using DataLibrary.Constants;
+using DataLibrary.Extensions;
 using DataLibrary.Helpers;
+using DataLibrary.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +17,7 @@ namespace DataLibrary.Services
 
         private const string BaseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
         private DateTime begginingECBDate = new DateTime(1999, 1, 4);
-        private char underscore = Convert.ToChar(StringConstants.Underscore);
+
         public async Task<string> SendGetRequest(string endpoint)
         {
             HttpRequestMessage getRequest = CreateGetRequest(endpoint);
@@ -31,7 +33,6 @@ namespace DataLibrary.Services
             {
                 return response.StatusCode.ToString();
             }
-
             return await response.Content.ReadAsStringAsync();
         }
 
@@ -39,18 +40,18 @@ namespace DataLibrary.Services
         public List<string> MapEndpointToLookupKeys(string endpoint)
         {
             List<string> lookupKeys;
-
-            var queryData = endpoint.Split('.', '+', '?', '=', '&');
-            List<DateTime> outputDates = new List<DateTime>();
             List<string> codes;
+            List<DateTime> dates = new List<DateTime>();
+            //List<string> query = endpoint.Split(EndpointHelper.separators).ToList();
+            var query = endpoint.Split(EndpointHelper.separators);
 
-            outputDates.Add(MapDate(queryData, "startPeriod"));
-            outputDates.Add(MapDate(queryData, "endPeriod"));
+            dates.Add(MapFrom(query, nameof(Period.startPeriod)));
+            dates.Add(MapFrom(query, nameof(Period.endPeriod)));
 
-            var formattedDates = DateTimeHelper.CreateRange(outputDates);
+            var workDates = DateTimeHelper.CreateWorkDatesFrom(dates);
 
-            codes = MapCurrencyCodes(queryData);
-            lookupKeys = CombineDatesWithCodes(formattedDates, codes);
+            codes = MapCurrencyCodes(query);
+            lookupKeys = CombineDatesWithCodes(workDates, codes);
             return lookupKeys;
         }
 
@@ -185,48 +186,47 @@ namespace DataLibrary.Services
             return codes;
         }
 
-        private DateTime MapDate(string[] queryData, string periodName)
+        private DateTime MapFrom<T>(T query, string period) where T : IList<string>
         {
-            DateTime outputDate = queryData.Any(item => item == periodName)
-                ? MapCustomStartEndDate(queryData, periodName)
-                : AssignDefaultStartEndDate(queryData, periodName);
-            return outputDate;
+            DateTime date = query.Any(part => part == period)
+                ? MapCustomStartEndDate(query, period)
+                : AssignDefaultStartEndDate(query, period);
+            return date;
         }
 
-        private DateTime AssignDefaultStartEndDate(string[] queryData, string periodName)
+        private DateTime AssignDefaultStartEndDate<T>(T query, string period) where T : IList<string>
         {
             DateTime startEndDate;
-            if (periodName == "startPeriod")
+            if (period == nameof(Period.startPeriod))
             {
                 //ECB beginning date for api data
                 startEndDate = begginingECBDate;
                 return startEndDate;
             }
 
-            return queryData.Any(item => item == "true")
-                ? CreateDateFromQuery(queryData, "startPeriod")
-                : CreateDateFromQuery(queryData, periodName);
+            return query.Any(item => item == "true")
+                ? CreateDateFromQuery(query, "startPeriod")
+                : CreateDateFromQuery(query, period);
         }
 
-        private DateTime MapCustomStartEndDate(string[] queryData, string periodName)
+        private DateTime MapCustomStartEndDate<T>(T query, string period) where T : IList<string>
         {
-            var startEndDate = CreateDateFromQuery(queryData, periodName);
-            return periodName == "startPeriod" ? startEndDate : DateTimeHelper.GetModify(startEndDate);
+            var date = CreateDateFromQuery(query, period);
+            return date == DateTime.Today ? DateTimeHelper.GetLastAvailableECB(date) : date;
         }
 
-        private DateTime CreateDateFromQuery(string[] queryData, string periodName)
+        private DateTime CreateDateFromQuery<T>(T query, string period) where T : IList<string>
         {
-            var periodIndex = Array.FindIndex(queryData, item => item == periodName);
-            var startEndDateStr = queryData[++periodIndex];
+            var partIndex = query.IndexOf(query.FirstOrDefault(part => part == period));
+            var startEndDateStr = query[++partIndex];
 
-            var dateParts = startEndDateStr.Split('-');
+            var dateParts = startEndDateStr.Split(StringConstants.EnDash);
             return new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]));
         }
 
         private HttpRequestMessage CreateGetRequest(string endpoint)
         {
-            var baseAddress = "https://sdw-wsrest.ecb.europa.eu/service/data/EXR/";
-            var url = baseAddress + endpoint;
+            var url = BaseAddress + endpoint;
             var requestMsg = new HttpRequestMessage(HttpMethod.Get, url);
             requestMsg.Headers.Add("Accept", "application/json");
             requestMsg.Headers.Add("Accept-Encoding", "deflate");
